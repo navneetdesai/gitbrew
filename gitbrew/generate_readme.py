@@ -31,16 +31,16 @@ def main():
 
     if not mock:
         summaries = llm.summarize_file(files)
-        with open(f"readme.md-{datetime.now()}", "w") as f:
+        with open(f"summaries.md-{datetime.now()}", "w") as f:
             f.write("\n".join(summaries))
     else:
         print("Mocking the summary generation")
-        with open("readme.md", "r") as f:
+        with open("summaries.md", "r") as f:
             summaries = f.readlines()
 
     readme_content = llm.generate_readme(summaries)
     print(readme_content)
-    with open("generated_readme.md", "w") as f:
+    with open("Readme.md", "w") as f:
         f.write(readme_content)
 
 
