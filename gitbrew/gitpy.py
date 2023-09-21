@@ -4,10 +4,12 @@ Wrappers for the GitHub API
 import re
 
 from github import Auth, Github
+from github.ContentFile import ContentFile
 
 
 class GitPy:
     def __init__(self, token):
+        self.repo = None
         self.github = Github(token)
 
     def get_repo(self, url):
@@ -16,8 +18,8 @@ class GitPy:
         :param url: Repository url
         :return: Repository object
         """
-        repo = self.extract_repo(url)
-        return self.github.get_repo(repo)
+        self.repo = self.extract_repo(url)
+        return self.github.get_repo(self.repo)
 
     @staticmethod
     def extract_repo(url):
@@ -26,7 +28,8 @@ class GitPy:
                 raise ValueError("Invalid repository url")
             return f"{match[1]}/{match[2]}"
 
-    def get_content(self, repo):
+    @staticmethod
+    def get_content(repo):
         """
         Gets the contents of a repository
         :param repo: Repository object
@@ -36,6 +39,15 @@ class GitPy:
         contents = repo.get_contents("")
         while contents:
             file_content = contents.pop(0)
+            # print(file_content.path.split('.')[-1])
+            if file_content.path.split(".")[-1] in (
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "gitignore",
+            ):
+                continue
             if file_content.type == "dir":
                 contents.extend(repo.get_contents(file_content.path))
             else:
