@@ -1,50 +1,35 @@
-# Sign Language Recognition
+# Connect Four Game
 
-![Demo](demo.png)
+Welcome to the Connect Four Game repository! This repository contains a Python script that implements the classic game Connect Four using the Pygame library. 
+
+![Connect Four](https://upload.wikimedia.org/wikipedia/commons/a/ad/Connect_Four.gif)
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Introduction
-Welcome to the Sign Language Recognition project! This repository contains code for a computer vision project that uses the MediaPipe library to detect and track landmarks on a person's face, hands, and body. The goal of this project is to recognize gestures in American Sign Language (ASL) in real-time.
+The `main.py` file in this repository is a Python script that allows you to play the game Connect Four on your computer. The game is implemented using the Pygame library, which provides the necessary functionality for creating a graphical user interface.
 
 ## Installation
-To install the necessary dependencies, please follow these steps:
-1. Navigate to the root folder of the project.
-2. Run the command `pip install -r requirements.txt`.
+To run the Connect Four game on your computer, you need to have Python and Pygame installed. If you don't have Python installed, you can download it from the official Python website. To install Pygame, you can use the following command:
+
+```
+pip install pygame
+```
 
 ## Usage
-### Dataset Creation
-To create the dataset, please follow these steps:
-1. Open the `main.py` file.
-2. Uncomment line 166 in the file.
-3. This will enable video capture, and thirty videos of thirty frames each will be captured for each phrase in the `Constants.PHRASES` list.
-
-### Gesture Recognition
-To run the gesture recognition, please follow these steps:
-1. Open the `main.py` file.
-2. Comment out line 166 in the file.
-3. This will disable video capture and allow the program to recognize gestures in American Sign Language.
+To start playing the Connect Four game, simply run the `main.py` script using Python. The game will open in a new window and you can start playing by clicking on the columns to drop your tokens. The game will automatically detect winning moves and display a message when a player wins.
 
 ## Contributing
-Contributions are welcome! If you would like to contribute to this project, please follow these guidelines:
-- Fork the repository.
-- Create a new branch for your feature or bug fix.
-- Make your changes and commit them with descriptive messages.
-- Push your changes to your forked repository.
-- Submit a pull request to the main repository.
+Contributions to this repository are welcome! If you have any ideas for improvements or new features, feel free to open an issue or submit a pull request. Please make sure to follow the code style and guidelines.
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
+This repository is licensed under the [MIT License](LICENSE). Feel free to use the code for personal or commercial purposes.
 
-![ASL](asl.jpg)
+---
 
-## Acknowledgements
-Special thanks to the creators of the following libraries and frameworks used in this project:
-- [MediaPipe](https://mediapipe.dev/): Used for detecting and tracking landmarks.
-- [OpenCV](https://opencv.org/): Used for computer vision tasks.
-- [NumPy](https://numpy.org/): Used for array manipulation and mathematical operations.
-- [scikit-learn](https://scikit-learn.org/): Used for machine learning algorithms.
-- [TensorFlow](https://www.tensorflow.org/): Used for building and deploying machine learning models.
-
-## Contact
-For any questions or inquiries, please contact [email protected]
-
-#To be written by you: Add any additional sections, such as "Features", "Demo", "Results", etc. based on the information you have.
+Thank you for checking out the Connect Four Game repository! Have fun playing the game and don't forget to leave a star if you find it enjoyable. If you have any questions or feedback, please don't hesitate to reach out. Happy gaming!
