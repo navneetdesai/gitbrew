@@ -46,7 +46,10 @@ class GitPy:
                 "jpeg",
                 "gif",
                 "gitignore",
+                "md",
+                "txt",
             ):
+                print(f"Skipping {file_content.path}")
                 continue
             if file_content.type == "dir":
                 contents.extend(repo.get_contents(file_content.path))

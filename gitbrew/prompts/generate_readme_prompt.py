@@ -13,7 +13,6 @@ class GenerateReadmePrompt:
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
-   Only fill the details that you can verify from the information provided. Wherever necessary you may say "#To be written by you".
     Take your time to write a good readme.
     This is the summary of the code in the repository: {summary}
     """

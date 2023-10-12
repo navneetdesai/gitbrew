@@ -11,6 +11,7 @@ from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 class OpenAI:
     engine = "gpt-3.5-turbo"
+    # engine = "gpt-4"
     max_tokens = 4096
     temperature = 0.2
     top_p = 1
@@ -58,6 +59,7 @@ class OpenAI:
                 "content": GenerateReadmePrompt.user_prompt.format(summary=summary),
             },
         ]
+        print("Making an API call to OpenAI for generating readme")
         response = openai.ChatCompletion.create(
             model=self.engine,
             messages=messages,
