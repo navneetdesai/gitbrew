@@ -1,3 +1,6 @@
+# output files generated for readme etc
+output/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
