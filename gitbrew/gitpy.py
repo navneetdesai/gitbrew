@@ -72,12 +72,15 @@ class GitPy:
                 content.append(file_content)
         return content
 
-    def list_issues(self):
+    def list_issues(self, status="open"):
         """
-        Lists all open issues in a repository
+        Lists all open issues in a repository by default
+        :param status: open/closed/all
         :return:
         """
         repo = self.github.get_repo(self.repo_str)
         open_issues = repo.get_issues(state="open")
-        for issue in open_issues:
-            print(issue)
+        for issue in open_issues[:5]:
+            print(issue.title)
+            print(issue.state)
+            print("\n\n")

@@ -10,6 +10,7 @@ from llms.cohere import Cohere
 from llms.openai import OpenAI
 
 mock = True
+# Todo: A lot of refactoring
 
 
 def init():

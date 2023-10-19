@@ -20,6 +20,7 @@ tiktoken = "^0.5.1"
 chromadb = "^0.4.11"
 bs4 = "^0.0.1"
 cohere = "^4.27"
+pyinquirer = "^1.0.3"
 
 [build-system]
 requires = ["poetry-core"]
