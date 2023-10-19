@@ -8,30 +8,45 @@ from github.ContentFile import ContentFile
 
 
 class GitPy:
-    def __init__(self, token):
+    def __init__(self, token, repo=None):
+        """
+        Initialize the GitPy object, repository (acc/repo)
+        and optionally the repo object (from gitpy.get_repo)
+        :param token:
+        :param repo:
+        """
+        self.repo_str: str = repo
         self.repo = None
-        self.github = Github(token)
-
-    def get_repo(self, url):
-        """
-        Gets a repository object from a url
-        :param url: Repository url
-        :return: Repository object
-        """
-        self.repo = self.extract_repo(url)
-        return self.github.get_repo(self.repo)
+        self.github: Github = Github(token)
 
     @staticmethod
     def extract_repo(url):
+        """
+        Extracts the repository string (typically acc/repo)
+         from a url
+        :param url: github repo url
+        :return: repository string as acc/repo
+        """
         if match := re.search(r"github.com/([\w-]+)/([\w-]+)", url):
             if not match[1] or not match[2]:
                 raise ValueError("Invalid repository url")
             return f"{match[1]}/{match[2]}"
 
+    def get_repo(self, url):
+        """
+        Gets a repository object from a url using github api
+        :param url: Repository url
+        :return: Repository object
+        """
+        self.repo_str = self.extract_repo(url)
+        self.repo = self.github.get_repo(self.repo_str)
+        return self.repo
+
     @staticmethod
     def get_content(repo):
         """
         Gets the contents of a repository
+        Feature: Readme generation
         :param repo: Repository object
         :return: List of contents as ContentFile objects
         """
@@ -39,7 +54,7 @@ class GitPy:
         contents = repo.get_contents("")
         while contents:
             file_content = contents.pop(0)
-            # print(file_content.path.split('.')[-1])
+            # Todo: Add more file types
             if file_content.path.split(".")[-1] in (
                 "png",
                 "jpg",
@@ -56,3 +71,13 @@ class GitPy:
             else:
                 content.append(file_content)
         return content
+
+    def list_issues(self):
+        """
+        Lists all open issues in a repository
+        :return:
+        """
+        repo = self.github.get_repo(self.repo_str)
+        open_issues = repo.get_issues(state="open")
+        for issue in open_issues:
+            print(issue)
