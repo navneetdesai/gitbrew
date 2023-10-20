@@ -14,7 +14,7 @@ class Questions:
                 "Create Issue",
                 "Find Duplicate Issues",
                 "Find Issues by Label",
-                "Quit",
+                "Cancel",
             ],
         }
     ]

@@ -22,8 +22,8 @@ class Shell(cmd.Cmd):
         Unit testing shortcut
         :return:
         """
-        self.git_helper.repo_str = "quora/pyanalyze"
-        print(self._retrieve_duplicate_issues("Add more custom checking", ""))
+        self.git_helper.repo_str = "navneetdesai/gitbrew"
+        self.do_issue_interaction()
 
     def __init__(self):
         super().__init__()
@@ -122,8 +122,19 @@ class Shell(cmd.Cmd):
         elif choice == "Create Issue":
             self._create_issue()
         elif choice == "Find Duplicate Issues":
-            # self._find_duplicate_issues()
-            pass
+            duplicate_issues = self._retrieve_duplicate_issues(
+                self._prompt_title_body()
+            )
+            for issue in duplicate_issues:
+                print(issue)
+        elif choice == "Find Issues by Label":
+            label = input("Enter the label: ")
+            issues = self.git_helper.fetch_issues(labels=[label])
+            for issue in issues:
+                print(issue.title, issue.url, sep=": ")
+        elif choice == "Cancel":
+            print("Cancelling...")
+            return
 
     def _list_issues(self):
         """
@@ -135,7 +146,7 @@ class Shell(cmd.Cmd):
         questions = Questions.ISSUE_STATUS_QUESTIONS
         self.git_helper.list_issues(self.CHOICES.get(prompt(questions)["choice"]))
 
-    def _retrieve_duplicate_issues(self, title=None, body=None):
+    def _retrieve_duplicate_issues(self, title=None, body=None, n=10):
         """
         Returns top 10 open issues that are most likely to be similar to the new issue
         :param title: Title of the new issue
@@ -146,22 +157,37 @@ class Shell(cmd.Cmd):
         issue_text = [f"{issue.title}: {issue.body}" for issue in open_issues]
         new_issue_text = f'{title or ""}: {body or ""}'
         indices: list[tuple[int, Any]] = self._find_similar_issues_openai(
-            new_issue_text, issue_text
+            new_issue_text, issue_text, n
         )
-        return [open_issues[index[0]].title for index in indices]
+        return [
+            f"{open_issues[index[0]].title}:{open_issues[index[0]].url}"
+            for index in indices
+        ]
 
     def _create_issue(self):
         """
         Create an issue from the command line
         :return:
         """
+        body, title = self._prompt_title_body()
+        yn = input(
+            "Would you like to check if this issue has already been raised? (y/n): "
+        )
+        duplicate_issues = self._retrieve_duplicate_issues(title, body)
+        if yn == "y" and duplicate_issues:
+            print("Possible duplicate issues found:")
+            for issue in duplicate_issues:
+                print(issue)
+        yn = input("Would you like to create this issue? (y/n): ")
+        if yn == "y":
+            self.git_helper.create_issue(title, body)
+        else:
+            print("Issue not created")
+
+    def _prompt_title_body(self):
         title = input("Enter the title of the new issue: ")
         body = input("Enter the body of the new issue: ")
-        if duplicate_issues := self._retrieve_duplicate_issues(title, body):
-            print("Possible duplicate issues found: ")
-            for issue in duplicate_issues:
-                print(issue[0][:25])
-        # self.git_helper.create_issue(title, body)
+        return body, title
 
     @staticmethod
     def _find_similar_issues_openai(new_issue_text, issue_text, n=10):
