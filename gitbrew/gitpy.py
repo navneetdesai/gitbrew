@@ -8,7 +8,7 @@ from github.ContentFile import ContentFile
 
 
 class GitPy:
-    def __init__(self, token, repo=None):
+    def __init__(self, token, repo=None, verbose=True):
         """
         Initialize the GitPy object, repository (acc/repo)
         and optionally the repo object (from gitpy.get_repo)
@@ -18,6 +18,7 @@ class GitPy:
         self.repo_str: str = repo
         self.repo = None
         self.github: Github = Github(token)
+        self.verbose = verbose
 
     @staticmethod
     def extract_repo(url):
@@ -72,15 +73,28 @@ class GitPy:
                 content.append(file_content)
         return content
 
-    def list_issues(self, status="open"):
+    def create_issue(self, *kwargs):
         """
-        Lists all open issues in a repository by default
-        :param status: open/closed/all
-        :return:
+        Creates an issue in a repository
+        :param kwargs: title, body, assignee, labels
+        :return: None
         """
         repo = self.github.get_repo(self.repo_str)
-        open_issues = repo.get_issues(state="open")
-        for issue in open_issues[:5]:
+        repo.create_issue(*kwargs)
+        print("Issue created successfully.")
+
+    def list_issues(self, state="open"):
+        """
+        Lists all open issues in a repository by default
+        :param state: open/closed/all
+        :return:
+        """
+        issues = self.fetch_issues(state=state)
+        for issue in issues:
             print(issue.title)
             print(issue.state)
             print("\n\n")
+
+    def fetch_issues(self, **kwargs):
+        repo = self.github.get_repo(self.repo_str)
+        return repo.get_issues(**kwargs)

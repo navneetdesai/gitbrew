@@ -2,11 +2,14 @@ import cmd
 import os
 import subprocess
 import sys
+from typing import Any
 
+import openai
 from dotenv import load_dotenv
 from gitpy import GitPy
 from PyInquirer import prompt
 from questions import Questions
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 class Shell(cmd.Cmd):
@@ -16,14 +19,16 @@ class Shell(cmd.Cmd):
 
     def do_1(self, arg):
         """
-        Testing method for quick routing during unit testing
+        Unit testing shortcut
         :return:
         """
-        self.do_issue_interaction()
+        self.git_helper.repo_str = "quora/pyanalyze"
+        print(self._retrieve_duplicate_issues("Add more custom checking", ""))
 
     def __init__(self):
         super().__init__()
         load_dotenv()
+        openai.api_key = os.getenv("OPENAI_API_KEY")
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
 
     @staticmethod
@@ -103,15 +108,8 @@ class Shell(cmd.Cmd):
                 print(f"Error: {e}")
                 sys.exit(1)
         else:
-            # url = https://github.com/quora/pyanalyze
-
-            questions = [
-                {
-                    "type": "input",
-                    "name": "repo_url",
-                    "message": "Enter the repository url",
-                }
-            ]
+            # url = https://github.com/quora/pyanalyze # for testing
+            questions = Questions.ASK_FOR_REPO_URL
             url = prompt(questions)["repo_url"]
             self.git_helper.repo_str = self.git_helper.extract_repo(url)
 
@@ -121,7 +119,71 @@ class Shell(cmd.Cmd):
 
         if choice == "List Issues":
             self._list_issues()
+        elif choice == "Create Issue":
+            self._create_issue()
+        elif choice == "Find Duplicate Issues":
+            # self._find_duplicate_issues()
+            pass
 
     def _list_issues(self):
+        """
+        Lists issues in a repository based on status
+        Default status: open
+        Status can be: open, closed, all
+        :return:
+        """
         questions = Questions.ISSUE_STATUS_QUESTIONS
         self.git_helper.list_issues(self.CHOICES.get(prompt(questions)["choice"]))
+
+    def _retrieve_duplicate_issues(self, title=None, body=None):
+        """
+        Returns top 10 open issues that are most likely to be similar to the new issue
+        :param title: Title of the new issue
+        :param body: Body of the new issue
+        :return: List of duplicate issues (top 10)
+        """
+        open_issues = self.git_helper.fetch_issues(state="open")
+        issue_text = [f"{issue.title}: {issue.body}" for issue in open_issues]
+        new_issue_text = f'{title or ""}: {body or ""}'
+        indices: list[tuple[int, Any]] = self._find_similar_issues_openai(
+            new_issue_text, issue_text
+        )
+        return [open_issues[index[0]].title for index in indices]
+
+    def _create_issue(self):
+        """
+        Create an issue from the command line
+        :return:
+        """
+        title = input("Enter the title of the new issue: ")
+        body = input("Enter the body of the new issue: ")
+        if duplicate_issues := self._retrieve_duplicate_issues(title, body):
+            print("Possible duplicate issues found: ")
+            for issue in duplicate_issues:
+                print(issue[0][:25])
+        # self.git_helper.create_issue(title, body)
+
+    @staticmethod
+    def _find_similar_issues_openai(new_issue_text, issue_text, n=10):
+        """
+        Find similar issues based on cosine similarity
+        :param new_issue_text:
+        :param issue_text:
+        :return:
+        """
+        embeddings = openai.Embedding.create(
+            input=issue_text,
+            model="text-embedding-ada-002",
+        )
+        new_issue_embedding = openai.Embedding.create(
+            input=new_issue_text,
+            model="text-embedding-ada-002",
+        )
+        y = new_issue_embedding["data"][0]["embedding"]
+        scores = []
+        for index, embedding in enumerate(embeddings["data"]):
+            x = embedding["embedding"]
+            similarity = cosine_similarity([x], [y])[0][0]
+            scores.append((index, similarity))
+
+        return sorted(scores, reverse=True, key=lambda m: m[1])[:n]

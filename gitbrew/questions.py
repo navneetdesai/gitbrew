@@ -4,6 +4,21 @@ Questions prompts for pyinquirer
 
 
 class Questions:
+    ISSUE_INTERACTION_QUESTIONS = [
+        {
+            "type": "list",
+            "name": "choice",
+            "message": "What would you like to do?",
+            "choices": [
+                "List Issues",
+                "Create Issue",
+                "Find Duplicate Issues",
+                "Find Issues by Label",
+                "Quit",
+            ],
+        }
+    ]
+
     ISSUE_STATUS_QUESTIONS = [
         {
             "type": "list",
@@ -22,17 +37,10 @@ class Questions:
         }
     ]
 
-    ISSUE_INTERACTION_QUESTIONS = [
+    ASK_FOR_REPO_URL = [
         {
-            "type": "list",
-            "name": "choice",
-            "message": "What would you like to do?",
-            "choices": [
-                "List Issues",
-                "Create Issue",
-                "Find Duplicate Issues",
-                "Find Issues by Label",
-                "Quit",
-            ],
+            "type": "input",
+            "name": "repo_url",
+            "message": "Enter the repository url",
         }
     ]
