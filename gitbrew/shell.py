@@ -11,25 +11,50 @@ from PyInquirer import prompt
 from questions import Questions
 from sklearn.metrics.pairwise import cosine_similarity
 
+from gitbrew.pull_requests import PullRequestReviewer
+
 
 class Shell(cmd.Cmd):
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
     CHOICES = {"All issues": "all", "Open issues": "open", "Closed issues": "closed"}
+    review_prompt = """
+    You are a large language model assigned for the task of reviewing code changes in a github pull request.
+    There are three types of changes in a pull request:
+    - Lines that start with + have been added.
+    - Lines that start with - have been removed. Do not suggest improvements for these lines.
+    - Other lines are unchanged.
+    Analyze the given title, body and diff content and provide an expert review for the pull request.
+    Include the following:
+    - Check if the title and description are descriptive enough. If not, suggest improvements.
+    - Identify POTENTIAL bugs in the code, and point them out in the code as potential bugs. Example: missing possible error handling inside function 'do_something', code change breaking existing functionality etc.
+    - Suggest best practices and conventions. If the code is not following any conventions, point out examples in the code and suggest improvements. Example: Use of magic numbers inside 'do_something', typos, long lines etc.
+    - Rate the readability of the code and suggest improvements. Example: Use of comments, variable names, function names etc.
+    
+    Present your review in a bullet point format. Do not explain what the code does, and focus on the code changes instead. Avoid minor nitpicks.
+    Do not repeat the same point multiple times. If you have already pointed out a potential issue in the code, do not repeat it again.
+    
+    This is the title and description of the pull request: {title} - {body}.
+    This is the diff content: {diff}
+    """
 
     def do_1(self, arg):
         """
         Unit testing shortcut
         :return:
         """
-        self.git_helper.repo_str = "navneetdesai/gitbrew"
-        self.do_issue_interaction()
+        # self.git_helper.repo_str = "https://github.com/Textualize/rich"
+        # self.git_helper.repo_str = "Textualize/rich"
+        # self.do_issue_interaction()
+        self.pr_review_comment()
 
     def __init__(self):
         super().__init__()
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
+        self.pull_request_reviewer = PullRequestReviewer()
+        self.embeddings_cache = {}
 
     @staticmethod
     def do_exit(arg):
@@ -83,7 +108,8 @@ class Shell(cmd.Cmd):
         if f"do_{line.replace(' ', '_')}" in self.get_names():
             exec(f"self.do_{line.replace(' ', '_')}()")
         else:
-            raise AttributeError(f"Unknown command: {line}")
+            pass
+            # raise AttributeError(f"Unknown command: {line}")
 
     def do_issue_interaction(self):
         """
@@ -99,11 +125,11 @@ class Shell(cmd.Cmd):
                 result = subprocess.check_output(
                     command, cwd=".", universal_newlines=True
                 )
-                print(f"Current repo url is: {result}")
+                print(f"Target repository: {self.git_helper.repo_str}")
                 url = result.strip()
                 # Todo: Needs to be better designed
                 repo = url.split(":")[1].split(".")[0]
-                self.git_helper.repo_str = repo
+                # self.git_helper.repo_str = repo
             except subprocess.CalledProcessError as e:
                 print(f"Error: {e}")
                 sys.exit(1)
@@ -154,13 +180,16 @@ class Shell(cmd.Cmd):
         :return: List of duplicate issues (top 10)
         """
         open_issues = self.git_helper.fetch_issues(state="open")
-        issue_text = [f"{issue.title}: {issue.body}" for issue in open_issues]
+        # for issue in open_issues:
+        #     print(issue.title, issue.number, sep=": ")
+        issue_text = [f"{issue.title}: {issue.body[:1000]}" for issue in open_issues]
         new_issue_text = f'{title or ""}: {body or ""}'
         indices: list[tuple[int, Any]] = self._find_similar_issues_openai(
             new_issue_text, issue_text, n
         )
+
         return [
-            f"{open_issues[index[0]].title}:{open_issues[index[0]].url}"
+            f"{open_issues[index[0]].title}:{open_issues[index[0]].html_url}"
             for index in indices
         ]
 
@@ -184,23 +213,39 @@ class Shell(cmd.Cmd):
         else:
             print("Issue not created")
 
-    def _prompt_title_body(self):
-        title = input("Enter the title of the new issue: ")
-        body = input("Enter the body of the new issue: ")
+    @staticmethod
+    def _prompt_title_body():
+        title = input("What's the title of the new issue? ")
+        body = input("What's the description the new issue? ")
+        title = "Add validation for strings using regular expressions"
+        body = "We could add more robustness to user input validation by creating a class that uses reg expr"
         return body, title
 
-    @staticmethod
-    def _find_similar_issues_openai(new_issue_text, issue_text, n=10):
+    def triage_issue(self):
+        """
+        Triage issues
+        :return:
+        """
+        pass
+
+    def _find_similar_issues_openai(self, new_issue_text, issue_text, n=10):
         """
         Find similar issues based on cosine similarity
         :param new_issue_text:
         :param issue_text:
         :return:
         """
-        embeddings = openai.Embedding.create(
-            input=issue_text,
-            model="text-embedding-ada-002",
-        )
+        if self.git_helper.repo_str in self.embeddings_cache:
+            print("Using cached embeddings")
+            embeddings = self.embeddings_cache[self.git_helper.repo_str]
+        else:
+            # print("Generating embeddings")
+            embeddings = self.embeddings_cache[
+                self.git_helper.repo_str
+            ] = openai.Embedding.create(
+                input=issue_text,
+                model="text-embedding-ada-002",
+            )
         new_issue_embedding = openai.Embedding.create(
             input=new_issue_text,
             model="text-embedding-ada-002",
@@ -213,3 +258,24 @@ class Shell(cmd.Cmd):
             scores.append((index, similarity))
 
         return sorted(scores, reverse=True, key=lambda m: m[1])[:n]
+
+    def do_pr_review(self):
+        pull_requests = self.git_helper.get_pull_requests()
+        pr = pull_requests[0]
+        title, body, diff = pr.title, pr.body, pr.get_files()
+        print("Reviewing PR: ", title)
+        diff = "\n".join([file.patch for file in diff])
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "user",
+                    "content": self.review_prompt.format(
+                        title=title, body=body, diff=diff
+                    ),
+                }
+            ],
+            temperature=0.35,
+        )
+
+        review = response.choices[0]["message"]["content"].strip()

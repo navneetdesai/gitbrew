@@ -98,3 +98,7 @@ class GitPy:
     def fetch_issues(self, **kwargs):
         repo = self.github.get_repo(self.repo_str)
         return repo.get_issues(**kwargs)
+
+    def get_pull_requests(self, **kwargs):
+        repo = self.github.get_repo(self.repo_str)
+        return repo.get_pulls(**kwargs)

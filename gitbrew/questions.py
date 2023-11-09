@@ -41,6 +41,6 @@ class Questions:
         {
             "type": "input",
             "name": "repo_url",
-            "message": "Enter the repository url",
+            "message": "Enter the repository url: ",
         }
     ]
