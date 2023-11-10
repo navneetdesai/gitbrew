@@ -11,6 +11,7 @@ from PyInquirer import prompt
 from questions import Questions
 from sklearn.metrics.pairwise import cosine_similarity
 
+from gitbrew.command_handler import CommandHandler
 from gitbrew.pull_requests import PullRequestReviewer
 
 
@@ -32,8 +33,7 @@ class Shell(cmd.Cmd):
     - Rate the readability of the code and suggest improvements. Example: Use of comments, variable names, function names etc.
     
     Present your review in a bullet point format. Do not explain what the code does, and focus on the code changes instead. Avoid minor nitpicks.
-    Do not repeat the same point multiple times. If you have already pointed out a potential issue in the code, do not repeat it again.
-    
+    Do not repeat the same point multiple times. If you have already pointed out a potential issue in the code, do not repeat it again.    
     This is the title and description of the pull request: {title} - {body}.
     This is the diff content: {diff}
     """
@@ -46,7 +46,8 @@ class Shell(cmd.Cmd):
         # self.git_helper.repo_str = "https://github.com/Textualize/rich"
         # self.git_helper.repo_str = "Textualize/rich"
         # self.do_issue_interaction()
-        self.pr_review_comment()
+        # self.pr_review_comment()
+        ...
 
     def __init__(self):
         super().__init__()
@@ -55,6 +56,7 @@ class Shell(cmd.Cmd):
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.pull_request_reviewer = PullRequestReviewer()
         self.embeddings_cache = {}
+        self.command_handler = CommandHandler()
 
     @staticmethod
     def do_exit(arg):
@@ -108,7 +110,7 @@ class Shell(cmd.Cmd):
         if f"do_{line.replace(' ', '_')}" in self.get_names():
             exec(f"self.do_{line.replace(' ', '_')}()")
         else:
-            pass
+            self.command_handler.handle(line)
             # raise AttributeError(f"Unknown command: {line}")
 
     def do_issue_interaction(self):
@@ -180,8 +182,6 @@ class Shell(cmd.Cmd):
         :return: List of duplicate issues (top 10)
         """
         open_issues = self.git_helper.fetch_issues(state="open")
-        # for issue in open_issues:
-        #     print(issue.title, issue.number, sep=": ")
         issue_text = [f"{issue.title}: {issue.body[:1000]}" for issue in open_issues]
         new_issue_text = f'{title or ""}: {body or ""}'
         indices: list[tuple[int, Any]] = self._find_similar_issues_openai(
