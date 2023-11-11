@@ -44,3 +44,12 @@ class Questions:
             "message": "Enter the repository url: ",
         }
     ]
+
+    USER_CONFIRMATION = [
+        {
+            "type": "list",
+            "name": "confirmation",
+            "message": "We will run `{command}` Are you sure you want to proceed?",
+            "choices": ["Yes", "No"],
+        }
+    ]

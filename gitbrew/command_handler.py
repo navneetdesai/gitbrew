@@ -7,37 +7,53 @@ import subprocess
 
 import openai
 from dotenv import load_dotenv
+from PyInquirer import prompt
 
 from gitbrew.prompts.generate_command_prompt import GenerateCommandPrompt
 
-from .constants import ReadOnlyCommands
+from .constants import SafeCommands
 from .exceptions import InvalidAnswerFormatException
+from .questions import Questions
 
 
 class CommandHandler:
     def __init__(self):
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = "gpt-4"
+        self.model = "gpt-3.5-turbo"
         self.temperature = 0.2
         self.START_TAG = "<START>"
         self.END_TAG = "<END>"
         self.SEP_TAG = "<SEP>"
         self.COMMAND_PATTERN = re.compile(r"<START>(.*?)<END>", re.DOTALL)
-        self.history = []
+        self.CLARIFICATION_PATTERN = re.compile(r"<CLARIFY>(.*?)</CLARIFY", re.DOTALL)
+        self.history = []  # history of extracted commands
+        self.execution_history = []
 
     def handle(self, line):
-        prompt = GenerateCommandPrompt.prompt.format(user_intention=line)
+        """
+        Executes commands with confirmation and safety
+        Generates the prompt, retrieves answer from the model,
+        extracts commands from it and executes them
+        """
+        answer = self.ask_llm(line)
+        print(f"Answer: {answer}")
+        # answer = """<CLARIFY>
+        # Are you asking for the URL or name of the remote repository in your git project?
+        # </CLARIFY>"""
+        commands = self.extract_commands(answer) or self._get_clarification(
+            answer, line
+        )
+        self._execute_commands(commands)
+
+    def ask_llm(self, line):
+        _prompt = GenerateCommandPrompt.prompt.format(user_intention=line)
         response = openai.ChatCompletion.create(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": _prompt}],
             temperature=self.temperature,
         )
-        answer = response.choices[0]["message"]["content"].strip()
-        # print(f'Answer: {answer}')
-
-        commands = self.extract_commands(answer)
-        self._execute_commands(commands)
+        return response.choices[0]["message"]["content"].strip()
 
     def extract_commands(self, answer):
         """
@@ -53,24 +69,70 @@ class CommandHandler:
             )
             self.history.append(extracted_commands)
             return [] if "<CLARIFY>" in answer else extracted_commands
+        if "<CLARIFY>" in answer:
+            return []
         raise InvalidAnswerFormatException("Answer does not contain commands")
 
     def _execute_commands(self, commands):
         """
         Execute commands after confirmation from the user
-        :param commands:
-        :return:
+
+        For each command, checks if its whitelisted (safe / read-only), and executes it.
+        If it's not safe, ask for confirmation from the user
+
         """
         for command in commands:
-            tokens = command.split()
-            if tokens[1] in ReadOnlyCommands.commands:
-                print(f"Executing command: {command}")
-            else:
-                user_answer = input(
-                    f"Executing `{command}` might change something. Are you sure? (y/n)"
+            command_list = command.split()
+            print(command)
+            # Todo : subcommand is --super-prefix=path
+            if (
+                command_list[1] not in SafeCommands.commands
+                and self.get_user_confirmation(command)
+                or command_list[1] in SafeCommands.commands
+            ):
+                # Todo : Add error handling here
+                result = subprocess.check_output(
+                    command_list, cwd=".", universal_newlines=True
                 )
-                if user_answer == "y":
-                    print(f"Executing command: {command}")
-                else:
-                    print("Aborting...")
-                    return
+                print(result)
+
+            else:
+                print("Aborting...")
+                return
+
+    @staticmethod
+    def get_user_confirmation(command):
+        """
+        Gets user confirmation for the command
+        :param command: To be executed on confirmation
+        :return: True if user choose yes, no otherwise
+        """
+        print(command)
+        prompt_string = Questions.USER_CONFIRMATION
+        prompt_string[0][
+            "message"
+        ] = "We will run `{command}` Are you sure you want to proceed?".format(
+            command=command
+        )
+        answer = prompt(prompt_string)["confirmation"]
+        return answer == "Yes"
+
+    def _get_clarification(self, answer, line):
+        clarification = re.search(self.CLARIFICATION_PATTERN, answer)
+        question = [
+            {
+                "type": "input",
+                "name": "clarification",
+                "message": clarification[1],
+            }
+        ]
+        answer = prompt(question)["clarification"]
+        # print(answer)
+        line = f"{line}\n{clarification}: {answer}"
+        answer = self.ask_llm(line=line)
+        # print(answer)
+
+        if commands := self.extract_commands(answer):
+            return commands
+        else:
+            self._get_clarification(answer, line)
