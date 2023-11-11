@@ -37,12 +37,12 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        print(f"Answer: {answer}")
+        print(f"LLM's answer: {answer}")
         # answer = """<CLARIFY>
         # Are you asking for the URL or name of the remote repository in your git project?
         # </CLARIFY>"""
         commands = self.extract_commands(answer) or self._get_clarification(
-            answer, line
+            answer, GenerateCommandPrompt.prompt.format(user_intention=line)
         )
         self._execute_commands(commands)
 
@@ -83,7 +83,7 @@ class CommandHandler:
         """
         for command in commands:
             command_list = command.split()
-            print(command)
+            # print(command)
             # Todo : subcommand is --super-prefix=path
             if (
                 command_list[1] not in SafeCommands.commands
@@ -91,10 +91,12 @@ class CommandHandler:
                 or command_list[1] in SafeCommands.commands
             ):
                 # Todo : Add error handling here
-                result = subprocess.check_output(
-                    command_list, cwd=".", universal_newlines=True
-                )
-                print(result)
+                # result = subprocess.check_output(
+                #     command_list, cwd=".", universal_newlines=True
+                # )
+                # print(result)
+                # Todo: check for <branch_name> etc in the command
+                print(f"Executing: {command}")
 
             else:
                 print("Aborting...")
@@ -107,7 +109,7 @@ class CommandHandler:
         :param command: To be executed on confirmation
         :return: True if user choose yes, no otherwise
         """
-        print(command)
+        # print(command)
         prompt_string = Questions.USER_CONFIRMATION
         prompt_string[0][
             "message"
@@ -128,11 +130,13 @@ class CommandHandler:
         ]
         answer = prompt(question)["clarification"]
         # print(answer)
-        line = f"{line}\n{clarification}: {answer}"
+        conversation = f"{line}\n{clarification[1]}:{answer}"
+        line = f"This is our conversation: `{conversation}`"
+        print(line)
         answer = self.ask_llm(line=line)
         # print(answer)
 
         if commands := self.extract_commands(answer):
             return commands
         else:
-            self._get_clarification(answer, line)
+            return self._get_clarification(answer, conversation)
