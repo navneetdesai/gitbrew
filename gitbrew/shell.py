@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from gitpy import GitPy
 from PyInquirer import prompt
 from questions import Questions
+from rich.console import Console
 from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
@@ -57,6 +58,17 @@ class Shell(cmd.Cmd):
         self.pull_request_reviewer = PullRequestReviewer()
         self.embeddings_cache = {}
         self.command_handler = CommandHandler()
+        self.console = Console()
+
+    def completedefault(self, text, line, begidx, endidx):
+        # Customize the completion logic here
+        # Return a list of possible completions for 'text'
+        possible_completions = ["apple", "banana", "cherry", "dog", "elephant"]
+        return [
+            completion
+            for completion in possible_completions
+            if completion.startswith(text)
+        ]
 
     @staticmethod
     def do_exit(arg):

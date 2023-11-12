@@ -8,6 +8,7 @@ import subprocess
 import openai
 from dotenv import load_dotenv
 from PyInquirer import prompt
+from rich.console import Console
 
 from gitbrew.prompts.generate_command_prompt import GenerateCommandPrompt
 
@@ -20,6 +21,7 @@ class CommandHandler:
     def __init__(self):
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
+        self.console = Console()
         self.model = "gpt-3.5-turbo"
         self.temperature = 0.2
         self.START_TAG = "<START>"
@@ -37,7 +39,7 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        print(f"LLM's answer: {answer}")
+        # self.console.log(f"LLM's answer: {answer}")
         # answer = """<CLARIFY>
         # Are you asking for the URL or name of the remote repository in your git project?
         # </CLARIFY>"""
@@ -90,13 +92,13 @@ class CommandHandler:
                 and self.get_user_confirmation(command)
                 or command_list[1] in SafeCommands.commands
             ):
-                # Todo : Add error handling here
-                # result = subprocess.check_output(
-                #     command_list, cwd=".", universal_newlines=True
-                # )
-                # print(result)
-                # Todo: check for <branch_name> etc in the command
                 print(f"Executing: {command}")
+                # Todo : Add error handling here
+                result = subprocess.check_output(
+                    command_list, cwd=".", universal_newlines=True
+                )
+                print(result)
+                # Todo: check for <branch_name> etc in the command
 
             else:
                 print("Aborting...")
@@ -120,7 +122,14 @@ class CommandHandler:
         return answer == "Yes"
 
     def _get_clarification(self, answer, line):
+        """
+        Ask the user for clarification
+        :param answer:
+        :param line:
+        :return:
+        """
         clarification = re.search(self.CLARIFICATION_PATTERN, answer)
+
         question = [
             {
                 "type": "input",
@@ -128,13 +137,11 @@ class CommandHandler:
                 "message": clarification[1],
             }
         ]
+
         answer = prompt(question)["clarification"]
-        # print(answer)
         conversation = f"{line}\n{clarification[1]}:{answer}"
-        line = f"This is our conversation: `{conversation}`"
-        print(line)
+        line = f"This is our conversation: `{conversation}`. Based on the clarification provided, generate the git commands."
         answer = self.ask_llm(line=line)
-        # print(answer)
 
         if commands := self.extract_commands(answer):
             return commands
