@@ -2,6 +2,7 @@
 Wrappers for the OpenAI API
 """
 import base64
+import os
 
 import openai
 
@@ -10,7 +11,7 @@ from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 
 class OpenAI:
-    engine = "gpt-3.5-turbo"
+    model = "gpt-3.5-turbo"
     # engine = "gpt-4"
     max_tokens = 4096
     temperature = 0.2
@@ -21,15 +22,15 @@ class OpenAI:
     def __init__(
         self,
         api_key,
-        engine=engine,
+        model=model,
         max_tokens=max_tokens,
         temperature=temperature,
         top_p=top_p,
         frequency_penalty=frequency_penalty,
         presence_penalty=presence_penalty,
     ):
-        openai.api_key = api_key
-        self.engine = engine
+        openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
@@ -43,11 +44,13 @@ class OpenAI:
             prompt = SummarizeFilePrompt.template.format(
                 filename=file.name, content=content
             )
-            response = openai.ChatCompletion.create(
-                model=self.engine,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-            )
+            response = self.ask_llm(messages)
+            # Todo: remove after testing
+            # response = openai.ChatCompletion.create(
+            #     model=self.model,
+            #     messages=[{"role": "user", "content": prompt}],
+            #     temperature=self.temperature,
+            # )
             result.append(response.choices[0]["message"]["content"].strip())
         return result
 
@@ -60,9 +63,19 @@ class OpenAI:
             },
         ]
         print("Making an API call to OpenAI for generating readme")
+        return self.ask_llm(messages)
+        # Todo: Remove after readme is tested again
+        # response = openai.ChatCompletion.create(
+        #     model=self.model,
+        #     messages=messages,
+        #     temperature=self.temperature,
+        # )
+        # return response.choices[0]["message"]["content"].strip()
+
+    def ask_llm(self, prompt):
         response = openai.ChatCompletion.create(
-            model=self.engine,
-            messages=messages,
+            model=self.model,
+            messages=prompt,
             temperature=self.temperature,
         )
         return response.choices[0]["message"]["content"].strip()

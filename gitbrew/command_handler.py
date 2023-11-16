@@ -5,8 +5,8 @@ import os
 import re
 import subprocess
 
-import openai
 from dotenv import load_dotenv
+from llms.openai import OpenAI
 from PyInquirer import prompt
 from rich.console import Console
 
@@ -18,19 +18,19 @@ from .questions import Questions
 
 
 class CommandHandler:
-    def __init__(self):
+    def __init__(self, model="gpt-3.5-turbo", temperature=0.2, debug=False):
         load_dotenv()
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+        openai_api_key = os.getenv("OPENAI_API_KEY")
         self.console = Console()
-        self.model = "gpt-3.5-turbo"
-        self.temperature = 0.2
+        self.debug = debug
+        self.openai_client = OpenAI(
+            openai_api_key, model=model, temperature=temperature
+        )
         self.START_TAG = "<START>"
         self.END_TAG = "<END>"
         self.SEP_TAG = "<SEP>"
         self.COMMAND_PATTERN = re.compile(r"<START>(.*?)<END>", re.DOTALL)
         self.CLARIFICATION_PATTERN = re.compile(r"<CLARIFY>(.*?)</CLARIFY", re.DOTALL)
-        self.history = []  # history of extracted commands
-        self.execution_history = []
 
     def handle(self, line):
         """
@@ -39,10 +39,10 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        # self.console.log(f"LLM's answer: {answer}")
         # answer = """<CLARIFY>
         # Are you asking for the URL or name of the remote repository in your git project?
         # </CLARIFY>"""
+        self.debug and self.console.log(f"LLM's answer: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
             answer, GenerateCommandPrompt.prompt.format(user_intention=line)
         )
@@ -50,12 +50,8 @@ class CommandHandler:
 
     def ask_llm(self, line):
         _prompt = GenerateCommandPrompt.prompt.format(user_intention=line)
-        response = openai.ChatCompletion.create(
-            model=self.model,
-            messages=[{"role": "user", "content": _prompt}],
-            temperature=self.temperature,
-        )
-        return response.choices[0]["message"]["content"].strip()
+        _prompt = [{"role": "user", "content": _prompt}]
+        return self.openai_client.ask_llm(_prompt)
 
     def extract_commands(self, answer):
         """
@@ -65,11 +61,11 @@ class CommandHandler:
         :param answer:
         :return: list of commands in the answer
         """
+        # Todo: Filter commands separated by <SEP> tag
         if commands := re.search(self.COMMAND_PATTERN, answer):
             extracted_commands = list(
                 map(lambda s: s.strip(), commands[1].split(self.SEP_TAG))
             )
-            self.history.append(extracted_commands)
             return [] if "<CLARIFY>" in answer else extracted_commands
         if "<CLARIFY>" in answer:
             return []

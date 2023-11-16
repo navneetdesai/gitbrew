@@ -50,14 +50,15 @@ class Shell(cmd.Cmd):
         # self.pr_review_comment()
         ...
 
-    def __init__(self):
+    def __init__(self, debug=False):
         super().__init__()
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
+        self.debug = debug
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.pull_request_reviewer = PullRequestReviewer()
         self.embeddings_cache = {}
-        self.command_handler = CommandHandler()
+        self.command_handler = CommandHandler(debug=self.debug)
         self.console = Console()
 
     def completedefault(self, text, line, begidx, endidx):
