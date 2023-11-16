@@ -22,7 +22,7 @@ class CommandHandler:
         load_dotenv()
         openai_api_key = os.getenv("OPENAI_API_KEY")
         self.console = Console()
-        self.debug = debug
+        self.DEBUG = debug
         self.openai_client = OpenAI(
             openai_api_key, model=model, temperature=temperature
         )
@@ -39,7 +39,7 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        self.debug and self.console.log(f"LLM's answer: {answer}")
+        self.DEBUG and self.console.log(f"LLM's answer: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
             answer, GenerateCommandPrompt.prompt.format(user_intention=line)
         )
@@ -77,7 +77,9 @@ class CommandHandler:
         """
         for command in commands:
             command_list = command.split()
-            # Todo : subcommand is --super-prefix=path
+            command = self.sanitize_command(
+                command
+            )  # check for <branch_name> etc in the command
             if command_list[0] != "git":  # check if it's a comment
                 print(command)
             elif (  # check if it's a safe command or get confirmation from the user
@@ -85,29 +87,27 @@ class CommandHandler:
                 and self.get_user_confirmation(command)
                 or command_list[1] in SafeCommands.commands
             ):
-                command = self.sanitize_command(
-                    command
-                )  # check for <branch_name> etc in the command
-                print(f"Executing: {command}")
                 try:
-                    result = subprocess.check_output(
-                        command_list,
-                        cwd=".",
-                        universal_newlines=True,
-                        stderr=subprocess.STDOUT,
-                    )
-                    self.debug and print(result)
+                    print(f"Executing: {command}")
+                    # result = subprocess.check_output(
+                    #     command_list,
+                    #     cwd=".",
+                    #     universal_newlines=True,
+                    #     stderr=subprocess.STDOUT,
+                    # )
+                    # self.debug and print(result)
                 except subprocess.CalledProcessError as e:
                     print(f"Command '{e.cmd}' failed with return code {e.returncode}")
                     print(f"Output:\n{e.output}")
+                    break
                 except Exception as e:
                     print(f"An error occurred: {e}")
+                    break
             else:
                 print("Aborting...")
                 return
 
-    @staticmethod
-    def sanitize_command(command):
+    def sanitize_command(self, command):
         """
         Sanitize the command by removing placeholders like <branch_name>
 
@@ -124,7 +124,8 @@ class CommandHandler:
                 }
             ]
             answer = prompt(question)["answer"]
-            command = command.replace(f"<{place_holder[0]}>", answer)
+            command = command.replace(f"<{place_holder[1]}>", answer)
+            self.DEBUG and print(command)
         return command
 
     @staticmethod
