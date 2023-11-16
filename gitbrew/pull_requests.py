@@ -5,7 +5,7 @@ import openai
 from dotenv import load_dotenv
 
 
-class PullRequestReviewer(object):
+class PullRequestReviewer:
     def __init__(self, pr_url=None, repo=None):
         self.pr_url = pr_url
         self.repo = repo

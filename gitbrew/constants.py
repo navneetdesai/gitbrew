@@ -1,5 +1,5 @@
 """
-List of commands
+Constants for gitbrew
 https://git-scm.com/docs/git
 """
 

@@ -73,6 +73,11 @@ class OpenAI:
         # return response.choices[0]["message"]["content"].strip()
 
     def ask_llm(self, prompt):
+        """
+        Uses the openai ChatCompletion API to generate a response
+        :param prompt:
+        :return:
+        """
         response = openai.ChatCompletion.create(
             model=self.model,
             messages=prompt,
