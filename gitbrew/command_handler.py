@@ -39,9 +39,6 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        # answer = """<CLARIFY>
-        # Are you asking for the URL or name of the remote repository in your git project?
-        # </CLARIFY>"""
         self.debug and self.console.log(f"LLM's answer: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
             answer, GenerateCommandPrompt.prompt.format(user_intention=line)
@@ -61,7 +58,6 @@ class CommandHandler:
         :param answer:
         :return: list of commands in the answer
         """
-        # Todo: Filter commands separated by <SEP> tag
         if commands := re.search(self.COMMAND_PATTERN, answer):
             extracted_commands = list(
                 map(lambda s: s.strip(), commands[1].split(self.SEP_TAG))
@@ -81,24 +77,55 @@ class CommandHandler:
         """
         for command in commands:
             command_list = command.split()
-            # print(command)
             # Todo : subcommand is --super-prefix=path
-            if (
+            if command_list[0] != "git":  # check if it's a comment
+                print(command)
+            elif (  # check if it's a safe command or get confirmation from the user
                 command_list[1] not in SafeCommands.commands
                 and self.get_user_confirmation(command)
                 or command_list[1] in SafeCommands.commands
             ):
+                command = self.sanitize_command(
+                    command
+                )  # check for <branch_name> etc in the command
                 print(f"Executing: {command}")
-                # Todo : Add error handling here
-                result = subprocess.check_output(
-                    command_list, cwd=".", universal_newlines=True
-                )
-                print(result)
-                # Todo: check for <branch_name> etc in the command
-
+                try:
+                    result = subprocess.check_output(
+                        command_list,
+                        cwd=".",
+                        universal_newlines=True,
+                        stderr=subprocess.STDOUT,
+                    )
+                    self.debug and print(result)
+                except subprocess.CalledProcessError as e:
+                    print(f"Command '{e.cmd}' failed with return code {e.returncode}")
+                    print(f"Output:\n{e.output}")
+                except Exception as e:
+                    print(f"An error occurred: {e}")
             else:
                 print("Aborting...")
                 return
+
+    @staticmethod
+    def sanitize_command(command):
+        """
+        Sanitize the command by removing placeholders like <branch_name>
+
+        Loops while the command has a placeholder, and asks the user for the value
+        :param command:
+        :return:
+        """
+        while place_holder := re.search(r"<(.*?)>", command):
+            question = [
+                {
+                    "type": "input",
+                    "name": "answer",
+                    "message": f"Enter {place_holder[1]}",
+                }
+            ]
+            answer = prompt(question)["answer"]
+            command = command.replace(f"<{place_holder[0]}>", answer)
+        return command
 
     @staticmethod
     def get_user_confirmation(command):
@@ -107,7 +134,6 @@ class CommandHandler:
         :param command: To be executed on confirmation
         :return: True if user choose yes, no otherwise
         """
-        # print(command)
         prompt_string = Questions.USER_CONFIRMATION
         prompt_string[0][
             "message"
