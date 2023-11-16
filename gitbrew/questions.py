@@ -45,11 +45,11 @@ class Questions:
         }
     ]
 
-    USER_CONFIRMATION = [
+    USER_CONFIRMATION = [  # Get user confirmation before running git command
         {
             "type": "list",
             "name": "confirmation",
             "message": "We will run `{command}` Are you sure you want to proceed?",
-            "choices": ["Yes", "No"],
+            "choices": ["Yes", "No", "Explain"],
         }
     ]

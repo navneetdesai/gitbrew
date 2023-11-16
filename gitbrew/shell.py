@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from gitpy import GitPy
 from PyInquirer import prompt
 from questions import Questions
+from rich.console import Console
 from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
@@ -49,14 +50,26 @@ class Shell(cmd.Cmd):
         # self.pr_review_comment()
         ...
 
-    def __init__(self):
+    def __init__(self, debug=False):
         super().__init__()
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
+        self.debug = debug
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.pull_request_reviewer = PullRequestReviewer()
         self.embeddings_cache = {}
-        self.command_handler = CommandHandler()
+        self.command_handler = CommandHandler(debug=self.debug)
+        self.console = Console()
+
+    def completedefault(self, text, line, begidx, endidx):
+        # Customize the completion logic here
+        # Return a list of possible completions for 'text'
+        possible_completions = ["apple", "banana", "cherry", "dog", "elephant"]
+        return [
+            completion
+            for completion in possible_completions
+            if completion.startswith(text)
+        ]
 
     @staticmethod
     def do_exit(arg):
