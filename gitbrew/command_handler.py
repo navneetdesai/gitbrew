@@ -14,6 +14,7 @@ from gitbrew.prompts.generate_command_prompt import GenerateCommandPrompt
 
 from .constants import SafeCommands
 from .exceptions import InvalidAnswerFormatException
+from .prompts.explain_command_prompt import ExplainCommandPrompt
 from .questions import Questions
 
 
@@ -76,12 +77,15 @@ class CommandHandler:
 
         """
         for command in commands:
+            if not command.startswith("git"):
+                print(command)
+        for command in commands:
             command_list = command.split()
             command = self.sanitize_command(
                 command
             )  # check for <branch_name> etc in the command
             if command_list[0] != "git":  # check if it's a comment
-                print(command)
+                pass
             elif (  # check if it's a safe command or get confirmation from the user
                 command_list[1] not in SafeCommands.commands
                 and self.get_user_confirmation(command)
@@ -128,21 +132,39 @@ class CommandHandler:
             self.DEBUG and print(command)
         return command
 
-    @staticmethod
-    def get_user_confirmation(command):
+    def get_user_confirmation(self, command):
         """
         Gets user confirmation for the command
         :param command: To be executed on confirmation
         :return: True if user choose yes, no otherwise
         """
         prompt_string = Questions.USER_CONFIRMATION
-        prompt_string[0][
-            "message"
-        ] = "We will run `{command}` Are you sure you want to proceed?".format(
-            command=command
-        )
-        answer = prompt(prompt_string)["confirmation"]
+        answer = "Explain"
+        while answer == "Explain":
+            prompt_string[0][
+                "message"
+            ] = "We will run `{command}` Are you sure you want to proceed?".format(
+                command=command
+            )
+            answer = prompt(prompt_string)["confirmation"]
+            # handle explanations
+            if answer == "Explain":
+                self._print_explanation(command)
         return answer == "Yes"
+
+    def _print_explanation(self, command):
+        """
+        Called when user chooses "explain" in the confirmation prompt
+        Should explain the command and return to the confirmation prompt
+        :param command:
+        :return:
+        """
+
+        content = ExplainCommandPrompt.template.format(command=command)
+        explanation = self.openai_client.ask_llm(
+            prompt=[{"role": "user", "content": content}]
+        )
+        print(f"Explanation: {explanation}")
 
     def _get_clarification(self, answer, line):
         """
