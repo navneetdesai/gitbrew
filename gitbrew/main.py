@@ -6,7 +6,7 @@ from shell import Shell
 
 def main():
     shell = Shell(debug=len(sys.argv) > 1 and sys.argv[1] == "--debug")
-    shell.cmdloop("Welcome to gitbrew! Enter `quit` or `exit` to exit the application.")
+    shell.cmdloop()
 
 
 if __name__ == "__main__":

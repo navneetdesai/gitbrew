@@ -53,3 +53,18 @@ class Questions:
             "choices": ["Yes", "No", "Explain"],
         }
     ]
+
+    CHOOSE_UTILITY = [
+        {
+            "type": "list",
+            "name": "utility",
+            "message": "What would you like to do?",
+            "choices": [
+                "Generate a Readme",
+                "Work with github issues",
+                "Work with git",
+                "Review a pull request",
+                "Exit",
+            ],
+        }
+    ]

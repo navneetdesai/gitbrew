@@ -22,6 +22,7 @@ class Shell(cmd.Cmd):
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
     CHOICES = {"All issues": "all", "Open issues": "open", "Closed issues": "closed"}
+    MESSAGE = "Welcome to gitbrew! Enter `quit` or `exit` to exit the application.\n"
 
     def do_1(self, arg):
         """
@@ -40,20 +41,19 @@ class Shell(cmd.Cmd):
         self.openai_agent = OpenAI(os.getenv("OPENAI_API_KEY"), temperature=0.35)
         self.DEBUG = debug
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
-        self.pull_request_reviewer = PullRequestReviewer()
-        self.embeddings_cache = {}
-        self.command_handler = CommandHandler(debug=self.DEBUG)
+        self.embeddings_cache = {}  # local cache
+        self.command_handler = CommandHandler(debug=self.DEBUG)  # git command handler
+        self.pull_request_reviewer = PullRequestReviewer(
+            self.openai_agent
+        )  # pull request reviewer handler
         self.console = Console()
-
-    def completedefault(self, text, line, begidx, endidx):
-        # Customize the completion logic here
-        # Return a list of possible completions for 'text'
-        possible_completions = ["apple", "banana", "cherry", "dog", "elephant"]
-        return [
-            completion
-            for completion in possible_completions
-            if completion.startswith(text)
-        ]
+        self.UTILITIES = {
+            "Generate a Readme": self._readme_generation_handler,
+            "Work with github issues": self._issue_manager_handler,
+            "Work with git": self._git_command_handler,
+            "Review a pull request": self._pull_request_handler,
+            "Exit": self.do_exit,
+        }
 
     @staticmethod
     def do_exit(arg):
@@ -73,18 +73,6 @@ class Shell(cmd.Cmd):
         """
         return True
 
-    def do_help(self, arg: str):
-        """
-        Handler for "help" keyword
-        :param arg: Optional args
-        :return: True
-        """
-        # fetch all methods that start with "do_"
-        print("What would you like to do?")
-        for command in self.get_names():
-            if command.startswith("do_"):
-                print(f" - {command[3:].replace('_', ' ')}")
-
     def cmdloop(self, intro=None):
         """
         Create a command line loop
@@ -97,6 +85,20 @@ class Shell(cmd.Cmd):
             super().cmdloop()
         except KeyboardInterrupt:
             print("\nExiting...")
+            sys.exit(0)
+
+    def do_help(self, arg: str):
+        """
+        Handler for "help" keyword
+        :param arg: Optional args
+        :return: True
+        """
+        # fetch all methods that start with "do_"
+        # Todo: to be implemented
+        print("What would you like to do?")
+        for command in self.get_names():
+            if command.startswith("do_"):
+                print(f" - {command[3:].replace('_', ' ')}")
 
     def default(self, line: str) -> None:
         """
@@ -104,11 +106,37 @@ class Shell(cmd.Cmd):
         :param line: text input from cmd
         :return:
         """
-        if f"do_{line.replace(' ', '_')}" in self.get_names():
-            exec(f"self.do_{line.replace(' ', '_')}()")
-        else:
-            self.command_handler.handle(line)
-            # raise AttributeError(f"Unknown command: {line}")
+        self._git_command_handler(line)
+
+    def preloop(self) -> None:
+        self._choose_utility()
+
+    def _choose_utility(self, line=None):
+        """
+        Choose utility based on user input
+        Create embedding from user input and choose module with
+        the closest match
+
+        :param line:
+        :return:
+        """
+        if line:
+            print(f"I don't understand what you mean by: {line}")
+        questions = Questions.CHOOSE_UTILITY
+        self.UTILITIES.get(prompt(questions)["utility"])()
+
+    def _pull_request_handler(self):
+        print("Called Pull request handler")
+        # self.pull_request_reviewer.review()
+
+    def _git_command_handler(self, line):
+        print("Called git command handler")
+
+    def _issue_manager_handler(self):
+        print("Called issue manager handler")
+
+    def _readme_generation_handler(self):
+        print("Generating readme")
 
     def do_issue_interaction(self):
         """
@@ -237,6 +265,7 @@ class Shell(cmd.Cmd):
             embeddings = self.embeddings_cache[self.git_helper.repo_str]
         else:
             # print("Generating embeddings")
+            # Todo: Reuse openai methods instead of this
             embeddings = self.embeddings_cache[
                 self.git_helper.repo_str
             ] = openai.Embedding.create(
@@ -255,25 +284,3 @@ class Shell(cmd.Cmd):
             scores.append((index, similarity))
 
         return sorted(scores, reverse=True, key=lambda m: m[1])[:n]
-
-    def review_pull_request(self):
-        """
-        Review a pull request
-        Should be called by the shell when the user
-        wants to review a pull request
-        :return:
-        """
-        pull_requests = self.git_helper.get_pull_requests()
-        pr = pull_requests[0]
-        title, body, diff = pr.title, pr.body, pr.get_files()
-        print("Reviewing PR: ", title)
-        diff = "\n".join([file.patch for file in diff])
-        _prompt = [
-            {
-                "role": "user",
-                "content": PullRequestReviewPrompt.template.format(
-                    title=title, body=body, diff=diff
-                ),
-            }
-        ]
-        review = self.openai_agent.ask_llm(_prompt)

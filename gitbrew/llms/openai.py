@@ -11,7 +11,9 @@ from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 
 class OpenAI:
-    model = "gpt-3.5-turbo"
+    # set defaults
+    chat_model = "gpt-3.5-turbo"
+    embeddings_model = "text-embedding-ada-002"
     # engine = "gpt-4"
     max_tokens = 4096
     temperature = 0.2
@@ -22,7 +24,8 @@ class OpenAI:
     def __init__(
         self,
         api_key,
-        model=model,
+        chat_model=chat_model,
+        embeddings_model=embeddings_model,
         max_tokens=max_tokens,
         temperature=temperature,
         top_p=top_p,
@@ -30,7 +33,8 @@ class OpenAI:
         presence_penalty=presence_penalty,
     ):
         openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model
+        self.chat_model = chat_model
+        self.embeddings_model = embeddings_model
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
@@ -44,6 +48,13 @@ class OpenAI:
             prompt = SummarizeFilePrompt.template.format(
                 filename=file.name, content=content
             )
+            messages = [
+                {"role": "system", "content": GenerateReadmePrompt.system_prompt},
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ]
             response = self.ask_llm(messages)
             # Todo: remove after testing
             # response = openai.ChatCompletion.create(
@@ -79,8 +90,19 @@ class OpenAI:
         :return:
         """
         response = openai.ChatCompletion.create(
-            model=self.model,
+            model=self.chat_model,
             messages=prompt,
             temperature=self.temperature,
         )
         return response.choices[0]["message"]["content"].strip()
+
+    def create_embedding(self, text):
+        """
+        Uses the openai EmbeddingCreate API to generate an embedding
+        :param text:
+        :return:
+        """
+        return openai.Embedding.create(
+            input=text,
+            model=self.embeddings_model,
+        )

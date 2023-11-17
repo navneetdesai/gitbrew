@@ -25,7 +25,7 @@ class CommandHandler:
         self.console = Console()
         self.DEBUG = debug
         self.openai_client = OpenAI(
-            openai_api_key, model=model, temperature=temperature
+            openai_api_key, chat_model=model, temperature=temperature
         )
         self.START_TAG = "<START>"
         self.END_TAG = "<END>"
