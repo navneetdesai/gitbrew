@@ -1,13 +1,10 @@
 """
 Wrappers for the OpenAI API
 """
-import base64
+
 import os
 
 import openai
-
-from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
-from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 
 class OpenAI:

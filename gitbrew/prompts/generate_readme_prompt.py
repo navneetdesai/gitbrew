@@ -22,5 +22,5 @@ class GenerateReadmePrompt:
         - [License](#license)
     Take your time to write a good readme. Do not manufacture missing details. If you
     are unsure about something, mark it as TODO for the developer and move on.
-    This is the summary of the code in the repository: {summary}
+    This is the summary of the code in the repository: {summaries}
     """

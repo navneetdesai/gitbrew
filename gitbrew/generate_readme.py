@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 from gitpy import GitPy
 from llms.openai import OpenAI
 
-from gitbrew.prompts.summarize_file import SummarizeFilePrompt
+from gitbrew.constants import FILE_TYPES
+from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
+from gitbrew.prompts.summarize_file_prompt import SummarizeFilePrompt
 
 
 class ReadmeGenerator:
@@ -26,37 +28,6 @@ class ReadmeGenerator:
             frequency_penalty=0.6,
             max_tokens=8000,
         )
-        self.FILES_TO_SUMMARIZE = (
-            ".md",
-            ".py",
-            ".js",
-            ".ts",
-            ".html",
-            ".css",
-            ".scss",
-            ".yml",
-            ".yaml",
-            ".sql",
-            ".java",
-            ".kt",
-            ".go",
-            ".rb",
-            ".php",
-            ".c",
-            ".cpp",
-            ".h",
-            ".hpp",
-            ".cs",
-            ".swift",
-            ".rs",
-            ".sh",
-            ".ini",
-            ".toml",
-            "requirements.txt",
-            "Pipefile",
-            "package.json",
-            "Gemfile",
-        )
 
     def summarize_files(self, files):
         """
@@ -64,7 +35,20 @@ class ReadmeGenerator:
         :param files:
         :return:
         """
-        return [self._summarize_file(file) for file in files]
+        return [
+            f"File: {file}. \n Summary: {self._summarize_file(file)}"
+            for file in files
+            if self._to_summarize(file)
+        ]
+
+    @staticmethod
+    def _to_summarize(file):
+        """
+        Returns true if the file should be summarized
+        :param file:
+        :return:
+        """
+        return any(file.name.endswith(_type) for _type in FILE_TYPES.FILE_TYPES)
 
     def _summarize_file(self, file):
         """
@@ -90,5 +74,9 @@ class ReadmeGenerator:
         repo = self.git_helper.get_repo(repo_url)
         files = self.git_helper.get_content(repo)
         summaries = self.summarize_files(files)
-        # Todo: generate readme from summaries
-        return self.openai_agent.generate_readme(summaries)
+        system_prompt = GenerateReadmePrompt.system_prompt
+        user_prompt = GenerateReadmePrompt.user_prompt.format(
+            summaries="\n\n".join(summaries)
+        )
+        message = self.openai_agent.create_message(system_prompt, user_prompt)
+        return self.openai_agent.ask_llm(message)
