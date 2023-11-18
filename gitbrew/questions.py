@@ -90,3 +90,21 @@ class Questions:
             "choices": ["Yes", "No"],
         }
     ]
+
+    # Readme input URL
+    README_INPUT_URL = [
+        {
+            "type": "input",
+            "name": "repo_url",
+            "message": "Enter the repository url: ",
+        }
+    ]
+
+    # check whether the user wants to review the readme or post it
+    README_FILE_NAME = [
+        {
+            "type": "input",
+            "name": "file_name",
+            "message": "What would you like to save the file as? ",
+        }
+    ]

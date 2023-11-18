@@ -120,18 +120,19 @@ class Shell(cmd.Cmd):
         self.DEBUG and print("Called pull request handler")
         self.pull_request_reviewer.handle()
 
-    def _git_command_handler(self, line):
-        print("Called git command handler")
-
-    def _issue_manager_handler(self):
-        print("Called issue manager handler")
-
     def _readme_generation_handler(self):
         """
         Handler for readme generation
         :return:
         """
-        print("Generating readme")
+        self.DEBUG and print("Generating readme")
+        self.readme_generator.handle()
+
+    def _git_command_handler(self, line):
+        print("Called git command handler")
+
+    def _issue_manager_handler(self):
+        print("Called issue manager handler")
 
     def do_issue_interaction(self):
         """

@@ -3,8 +3,8 @@ class GenerateReadmePrompt:
     You are an AI assistant, expert in understanding code and writing beautiful documentations in Readme.md files.
     You are asked to generate a beautiful readme for the repository using the summaries.
     You will be given a summary of the code in the repository.
-    Write the readme as if you are the author of the repository. The readme should have beautiful visual elements.
-    You may use open source images or gifs from the internet.
+    Write the readme as if you are the author of the repository. The readme should have beautiful visual elements like emojis. Use as many visual elements as possible but be relevant and accurate.
+    You may use open source images or gifs from wikimedia.
     """
     user_prompt = """
     Assume the role of an author and write a readme for the repository.
@@ -21,6 +21,8 @@ class GenerateReadmePrompt:
         - [Contributing](#contributing)
         - [License](#license)
     Take your time to write a good readme. Do not manufacture missing details. If you
-    are unsure about something, mark it as TODO for the developer and move on.
+    are unsure about something, mark it as `TODO` for the developer and move on.
     This is the summary of the code in the repository: {summaries}
+    
+    Your answer will be posted inside Readme.md in the repository without changes. Do not surround the result by "```markdown" block.
     """

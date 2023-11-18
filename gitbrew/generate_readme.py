@@ -3,20 +3,20 @@ Generates readme from a github repository
 """
 import base64
 import os
-from datetime import datetime
 
-from dotenv import load_dotenv
 from gitpy import GitPy
 from llms.openai import OpenAI
+from PyInquirer import prompt
 
 from gitbrew.constants import FILE_TYPES
 from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
 from gitbrew.prompts.summarize_file_prompt import SummarizeFilePrompt
+from gitbrew.questions import Questions
 
 
 class ReadmeGenerator:
     """
-    Generates readme from a github repository
+    Generates readme from a GitHub repository
     """
 
     def __init__(self):
@@ -28,6 +28,33 @@ class ReadmeGenerator:
             frequency_penalty=0.6,
             max_tokens=8000,
         )
+
+    def handle(self):
+        """
+        Entry point for the readme generator
+        Should be called by the shell when the user wants to generate a readme.
+
+        :return:
+        """
+        _prompt = Questions.README_INPUT_URL
+        repo_url = prompt(_prompt)["repo_url"].strip()
+        readme_content = self.generate_readme(repo_url)
+        _prompt = Questions.README_FILE_NAME
+        file_name = prompt(_prompt)["file_name"].strip()
+        self._process_file_name(file_name)
+        self._write_readme(file_name, readme_content)
+
+    @staticmethod
+    def _write_readme(file_name, readme_content):
+        """
+        Writes the readme content to a file "README.md"
+        in the current directory.
+        If a file with the same name exists, it will be overwritten.
+        :param readme_content: markdown content
+        :return:
+        """
+        with open(file_name, "w") as f:
+            f.write(readme_content)
 
     def summarize_files(self, files):
         """
@@ -80,3 +107,26 @@ class ReadmeGenerator:
         )
         message = self.openai_agent.create_message(system_prompt, user_prompt)
         return self.openai_agent.ask_llm(message)
+
+    def _post_readme(self, repo_url, readme_content):
+        """
+        Push the readme to the repository root directory
+        that does not have a readme.
+        Pushes to the default branch of the repository.
+
+        :param repo_url: html url of the repository
+        :param readme_content: readme markdown content
+        :return: None
+        """
+        pass  # currently not in the scope of the project
+
+    @staticmethod
+    def _process_file_name(file_name):
+        """
+        Process the file name
+        :param file_name:
+        :return:
+        """
+        if not file_name or not file_name.contains("."):
+            file_name = "README.md"
+        return file_name
