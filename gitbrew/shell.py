@@ -14,7 +14,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.llms import OpenAI
-from gitbrew.prompts.pull_request_review_prompt import PullRequestReviewPrompt
 from gitbrew.pull_requests import PullRequestReviewer
 
 
@@ -43,8 +42,8 @@ class Shell(cmd.Cmd):
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.embeddings_cache = {}  # local cache
         self.command_handler = CommandHandler(debug=self.DEBUG)  # git command handler
-        self.pull_request_reviewer = PullRequestReviewer(
-            self.openai_agent
+        self.pull_request_reviewer = (
+            PullRequestReviewer()
         )  # pull request reviewer handler
         self.console = Console()
         self.UTILITIES = {
@@ -95,10 +94,7 @@ class Shell(cmd.Cmd):
         """
         # fetch all methods that start with "do_"
         # Todo: to be implemented
-        print("What would you like to do?")
-        for command in self.get_names():
-            if command.startswith("do_"):
-                print(f" - {command[3:].replace('_', ' ')}")
+        pass
 
     def default(self, line: str) -> None:
         """
@@ -126,8 +122,12 @@ class Shell(cmd.Cmd):
         self.UTILITIES.get(prompt(questions)["utility"])()
 
     def _pull_request_handler(self):
-        print("Called Pull request handler")
-        # self.pull_request_reviewer.review()
+        """
+        Handler for pull requests
+        :return:
+        """
+        self.DEBUG and print("Called pull request handler")
+        self.pull_request_reviewer.handle()
 
     def _git_command_handler(self, line):
         print("Called git command handler")

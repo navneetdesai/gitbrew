@@ -14,7 +14,6 @@ class OpenAI:
     # set defaults
     chat_model = "gpt-3.5-turbo"
     embeddings_model = "text-embedding-ada-002"
-    # engine = "gpt-4"
     max_tokens = 4096
     temperature = 0.2
     top_p = 1

@@ -81,3 +81,12 @@ class Questions:
             ],
         }
     ]
+
+    REVIEW_CONFIRMATION = [
+        {
+            "type": "list",
+            "name": "confirmation",
+            "message": "We will post the review to the pull request. Are you sure you want to proceed?",
+            "choices": ["Yes", "No"],
+        }
+    ]
