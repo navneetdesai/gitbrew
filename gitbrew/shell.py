@@ -14,6 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.generate_readme import ReadmeGenerator
+from gitbrew.issue_manager import IssueManager
 from gitbrew.llms import OpenAI
 from gitbrew.pull_requests import PullRequestReviewer
 
@@ -36,6 +37,7 @@ class Shell(cmd.Cmd):
             PullRequestReviewer()
         )  # pull request reviewer handler
         self.readme_generator = ReadmeGenerator()  # readme generator handler
+        self.issue_manager = IssueManager()  # issue manager handler
         self.console = Console()
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
@@ -132,7 +134,8 @@ class Shell(cmd.Cmd):
         print("Called git command handler")
 
     def _issue_manager_handler(self):
-        print("Called issue manager handler")
+        self.DEBUG and print("Called issue manager handler")
+        self.issue_manager.handle()
 
     def do_issue_interaction(self):
         """
