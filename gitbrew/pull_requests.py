@@ -32,6 +32,7 @@ class PullRequestReviewer:
             temperature=0.35,
             chat_model="gpt-4-1106-preview",
             frequency_penalty=0.6,
+            max_tokens=64000,
         )
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.actions = {
@@ -50,8 +51,10 @@ class PullRequestReviewer:
             ".yml",
             ".yaml",
         )
-        self.PULL_REQUEST_PATTERN = r"github.com/([\w-]+)/([\w-]+)/pull/([\d+])"
-        self.HEADER = "# [GITBREW]: This is an auto-generated review. \n\n"
+        self.PULL_REQUEST_PATTERN = r"github.com/([\w-]+)/([\w-]+)/pull/(\d+)"
+        self.HEADER = (
+            "# [GITBREW]: This is an auto-generated review for {filename}. \n\n"
+        )
 
     def _exit(self):
         """
@@ -191,5 +194,7 @@ class PullRequestReviewer:
         """
         for file, review in reviews.items():
             review = "\n".join(review)
-            pull_request.create_review(body=f"{self.HEADER}{review}", event="COMMENT")
+            pull_request.create_review(
+                body=f"{self.HEADER.format(filename=file)}{review}", event="COMMENT"
+            )
             print(f"Review posted successfully for {file}.")
