@@ -68,3 +68,16 @@ class Questions:
             ],
         }
     ]
+
+    PR_OPTIONS = [
+        {
+            "type": "list",
+            "name": "pr_option",
+            "message": "What would you like to do?",
+            "choices": [
+                "List pull requests",
+                "Review a pull request",
+                "Exit",
+            ],
+        }
+    ]
