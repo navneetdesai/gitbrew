@@ -77,3 +77,59 @@ class Commands:
         "pull",
         "push",
     }
+
+
+class FILE_TYPES:
+    """
+    File types that can be summarized
+    """
+
+    CODE_FILES = {
+        ".py",
+        ".js",
+        ".ts",
+        ".html",
+        ".css",
+        ".scss",
+        ".sql",
+        ".java",
+        ".kt",
+        ".go",
+        ".rb",
+        ".php",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".cs",
+        ".swift",
+        ".rs",
+        ".sh",
+    }
+
+    CONFIG_FILES = {
+        ".yml",
+        ".yaml",
+        ".ini",
+    }
+
+    REQUIREMENT_FILES = {
+        "requirements.txt",
+        "Pipfile",
+        "package.json",
+        "Gemfile",
+        ".toml",
+    }
+
+    DOCUMENTATION_FILES = {
+        ".md",
+        ".txt",
+        ".rst",
+        ".adoc",
+    }
+    FILE_TYPES = set.union(
+        CODE_FILES,
+        CONFIG_FILES,
+        REQUIREMENT_FILES,
+        DOCUMENTATION_FILES,
+    )

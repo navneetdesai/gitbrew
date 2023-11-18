@@ -13,6 +13,7 @@ from rich.console import Console
 from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
+from gitbrew.generate_readme import ReadmeGenerator
 from gitbrew.llms import OpenAI
 from gitbrew.pull_requests import PullRequestReviewer
 
@@ -22,17 +23,6 @@ class Shell(cmd.Cmd):
     exit_keywords = ["exit", "quit"]
     CHOICES = {"All issues": "all", "Open issues": "open", "Closed issues": "closed"}
     MESSAGE = "Welcome to gitbrew! Enter `quit` or `exit` to exit the application.\n"
-
-    def do_1(self, arg):
-        """
-        Unit testing shortcut - to be deleted
-        :return:
-        """
-        # self.git_helper.repo_str = "https://github.com/Textualize/rich"
-        # self.git_helper.repo_str = "Textualize/rich"
-        # self.do_issue_interaction()
-        # self.pr_review_comment()
-        ...
 
     def __init__(self, debug=False):
         super().__init__()
@@ -45,6 +35,7 @@ class Shell(cmd.Cmd):
         self.pull_request_reviewer = (
             PullRequestReviewer()
         )  # pull request reviewer handler
+        self.readme_generator = ReadmeGenerator()  # readme generator handler
         self.console = Console()
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
@@ -129,14 +120,19 @@ class Shell(cmd.Cmd):
         self.DEBUG and print("Called pull request handler")
         self.pull_request_reviewer.handle()
 
+    def _readme_generation_handler(self):
+        """
+        Handler for readme generation
+        :return:
+        """
+        self.DEBUG and print("Generating readme")
+        self.readme_generator.handle()
+
     def _git_command_handler(self, line):
         print("Called git command handler")
 
     def _issue_manager_handler(self):
         print("Called issue manager handler")
-
-    def _readme_generation_handler(self):
-        print("Generating readme")
 
     def do_issue_interaction(self):
         """

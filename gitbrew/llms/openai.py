@@ -1,13 +1,10 @@
 """
 Wrappers for the OpenAI API
 """
-import base64
+
 import os
 
 import openai
-
-from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
-from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 
 class OpenAI:
@@ -31,6 +28,17 @@ class OpenAI:
         frequency_penalty=frequency_penalty,
         presence_penalty=presence_penalty,
     ):
+        """
+        Wrapper for the OpenAI API
+        :param api_key:
+        :param chat_model:
+        :param embeddings_model:
+        :param max_tokens:
+        :param temperature:
+        :param top_p:
+        :param frequency_penalty:
+        :param presence_penalty:
+        """
         openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.chat_model = chat_model
         self.embeddings_model = embeddings_model
@@ -39,48 +47,6 @@ class OpenAI:
         self.top_p = top_p
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
-
-    def summarize_file(self, files):
-        result = []
-        for file in files:
-            content = base64.b64decode(file.content).decode("utf-8")[:3000]
-            prompt = SummarizeFilePrompt.template.format(
-                filename=file.name, content=content
-            )
-            messages = [
-                {"role": "system", "content": GenerateReadmePrompt.system_prompt},
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ]
-            response = self.ask_llm(messages)
-            # Todo: remove after testing
-            # response = openai.ChatCompletion.create(
-            #     model=self.model,
-            #     messages=[{"role": "user", "content": prompt}],
-            #     temperature=self.temperature,
-            # )
-            result.append(response.choices[0]["message"]["content"].strip())
-        return result
-
-    def generate_readme(self, summary):
-        messages = [
-            {"role": "system", "content": GenerateReadmePrompt.system_prompt},
-            {
-                "role": "user",
-                "content": GenerateReadmePrompt.user_prompt.format(summary=summary),
-            },
-        ]
-        print("Making an API call to OpenAI for generating readme")
-        return self.ask_llm(messages)
-        # Todo: Remove after readme is tested again
-        # response = openai.ChatCompletion.create(
-        #     model=self.model,
-        #     messages=messages,
-        #     temperature=self.temperature,
-        # )
-        # return response.choices[0]["message"]["content"].strip()
 
     def ask_llm(self, prompt):
         """
@@ -105,3 +71,18 @@ class OpenAI:
             input=text,
             model=self.embeddings_model,
         )
+
+    @staticmethod
+    def create_message(system_prompt=None, user_prompt=None):
+        """
+        Generate a message for the LLM with given prompts
+        for the chat completion API
+        :param user_prompt: User prompt
+        :param system_prompt: System prompt (Optional)
+        :return:
+        """
+        system_message = {"role": "system", "content": system_prompt}
+        user_message = {"role": "user", "content": user_prompt}
+        if not user_prompt:
+            raise ValueError("User prompt cannot be empty")
+        return [system_message, user_message] if system_prompt else [user_message]

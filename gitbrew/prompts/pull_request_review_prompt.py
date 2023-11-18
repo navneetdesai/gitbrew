@@ -64,7 +64,7 @@ class PullRequestReviewPrompt:
           - [ ] README and other documentation is updated
           - [ ] Changes to configurations are documented
         
-        - [ ] Potential bugs
+        - [ ] **Potential bugs**
             - [ ] There are no bugs in the code
             - [ ] The code has necessary error handling
         
