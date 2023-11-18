@@ -1,50 +1,94 @@
 """
 Generates readme from a github repository
 """
+import base64
 import os
 from datetime import datetime
 
 from dotenv import load_dotenv
 from gitpy import GitPy
-from llms.cohere import Cohere
 from llms.openai import OpenAI
 
-mock = True
-# Todo: A lot of refactoring
+from gitbrew.prompts.summarize_file import SummarizeFilePrompt
 
 
-def init():
-    load_dotenv()
-    github_token = os.getenv("GITHUB_TOKEN")
-    openai_token = os.getenv("OPENAI_API_KEY")
-    githandle = GitPy(token=github_token)
-    # llm = OpenAI(api_key=openai_token)
-    llm = Cohere()
-    return githandle, llm
+class ReadmeGenerator:
+    """
+    Generates readme from a github repository
+    """
 
+    def __init__(self):
+        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
+        self.openai_agent = OpenAI(
+            os.getenv("OPENAI_API_KEY"),
+            temperature=0.4,
+            chat_model="gpt-4-1106-preview",
+            frequency_penalty=0.6,
+            max_tokens=8000,
+        )
+        self.FILES_TO_SUMMARIZE = (
+            ".md",
+            ".py",
+            ".js",
+            ".ts",
+            ".html",
+            ".css",
+            ".scss",
+            ".yml",
+            ".yaml",
+            ".sql",
+            ".java",
+            ".kt",
+            ".go",
+            ".rb",
+            ".php",
+            ".c",
+            ".cpp",
+            ".h",
+            ".hpp",
+            ".cs",
+            ".swift",
+            ".rs",
+            ".sh",
+            ".ini",
+            ".toml",
+            "requirements.txt",
+            "Pipefile",
+            "package.json",
+            "Gemfile",
+        )
 
-def main():
-    github, llm = init()
-    # url = input("What's the repository url?: ")
-    url = "https://github.com/navneetdesai/ConnectFour"
-    repo = github.get_repo(url)
-    files = github.get_content(repo)
-    print(files)
+    def summarize_files(self, files):
+        """
+        Summarizes files
+        :param files:
+        :return:
+        """
+        return [self._summarize_file(file) for file in files]
 
-    if not mock:
-        summaries = llm.summarize_file(files)
-        with open(f"output/summaries-{datetime.now()}.md", "w") as f:
-            f.write("\n".join(summaries))
-    else:
-        print("Mocking the summary generation")
-        with open("output/summaries.md", "r") as f:
-            summaries = f.readlines()
+    def _summarize_file(self, file):
+        """
+        Summarizes a file using SummarizeFilePrompt
+        and the openai agent chat endpoint
+        :param file: GitHub file object
+        :return: summary of the file
+        """
+        system_prompt = SummarizeFilePrompt.system_prompt
+        user_prompt = SummarizeFilePrompt.user_prompt.format(
+            filename=file, content=base64.b64decode(file.content).decode("utf-8")
+        )
+        message = self.openai_agent.create_message(system_prompt, user_prompt)
+        return self.openai_agent.ask_llm(message)
 
-    readme_content = llm.generate_readme(summaries)
-    print(readme_content)
-    with open("Readme.md", "w") as f:
-        f.write(readme_content)
-
-
-if __name__ == "__main__":
-    main()
+    def generate_readme(self, repo_url):
+        """
+        Generate the markdown content for the readme file
+        :param repo_url: html url of the repository
+        :return: markdown content as a string
+        """
+        # generate summaries for all files in the repo
+        repo = self.git_helper.get_repo(repo_url)
+        files = self.git_helper.get_content(repo)
+        summaries = self.summarize_files(files)
+        # Todo: generate readme from summaries
+        return self.openai_agent.generate_readme(summaries)
