@@ -19,6 +19,7 @@ class GitPy:
         self.repo = None
         self.github: Github = Github(token)
         self.verbose = verbose
+        self.debug = True
 
     @staticmethod
     def extract_repo(url):
@@ -100,5 +101,10 @@ class GitPy:
         return repo.get_issues(**kwargs)
 
     def get_pull_requests(self, **kwargs):
+        self.debug and print(f"Fetching pull requests from {self.repo_str}...")
         repo = self.github.get_repo(self.repo_str)
         return repo.get_pulls(**kwargs)
+
+    def get_pull_request(self, number):
+        self.debug and print(f"Fetching PR#{number} from {self.repo_str}...")
+        return self.github.get_repo(self.repo_str).get_pull(number)

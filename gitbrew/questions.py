@@ -53,3 +53,40 @@ class Questions:
             "choices": ["Yes", "No", "Explain"],
         }
     ]
+
+    CHOOSE_UTILITY = [
+        {
+            "type": "list",
+            "name": "utility",
+            "message": "What would you like to do?",
+            "choices": [
+                "Generate a Readme",
+                "Work with github issues",
+                "Work with git",
+                "Review a pull request",
+                "Exit",
+            ],
+        }
+    ]
+
+    PR_OPTIONS = [
+        {
+            "type": "list",
+            "name": "pr_option",
+            "message": "What would you like to do?",
+            "choices": [
+                "List pull requests",
+                "Review a pull request",
+                "Exit",
+            ],
+        }
+    ]
+
+    REVIEW_CONFIRMATION = [
+        {
+            "type": "list",
+            "name": "confirmation",
+            "message": "We will post the review to the pull request. Are you sure you want to proceed?",
+            "choices": ["Yes", "No"],
+        }
+    ]
