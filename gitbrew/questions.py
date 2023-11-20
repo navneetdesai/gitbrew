@@ -14,7 +14,6 @@ class Questions:
                 "Create an Issue",
                 "Find Duplicate Issues",
                 "Find Similar Issues",
-                "Verify Issue Template",
                 "Cancel",
             ],
         }

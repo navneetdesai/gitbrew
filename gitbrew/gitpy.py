@@ -6,6 +6,8 @@ import re
 from github import Auth, Github
 from github.ContentFile import ContentFile
 
+from gitbrew import utilities
+
 
 class GitPy:
     def __init__(self, token, repo=None, verbose=True):
@@ -43,6 +45,9 @@ class GitPy:
         self.repo_str = self.extract_repo(url)
         self.repo = self.github.get_repo(self.repo_str)
         return self.repo
+
+    def get_repo_from_name(self, name):
+        return self.github.get_repo(name)
 
     @staticmethod
     def get_content(repo):
@@ -82,7 +87,7 @@ class GitPy:
         """
         repo = self.github.get_repo(self.repo_str)
         repo.create_issue(*kwargs)
-        print("Issue created successfully.")
+        return True
 
     def list_issues(self, state="open"):
         """
@@ -90,11 +95,14 @@ class GitPy:
         :param state: open/closed/all
         :return:
         """
-        issues = self.fetch_issues(state=state)
-        for issue in issues:
-            print(issue.title)
-            print(issue.state)
-            print("\n\n")
+        issues = list(
+            map(
+                lambda x: (x.state, x.title, x.html_url), self.fetch_issues(state=state)
+            )
+        )
+        utilities.print_table(
+            issues, headers=["State", "Title", "URL"], show_index=True
+        )
 
     def fetch_issues(self, **kwargs):
         repo = self.github.get_repo(self.repo_str)
