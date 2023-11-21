@@ -28,15 +28,14 @@ class Shell(cmd.Cmd):
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
             "Work with github issues": self._issue_manager_handler,
-            "Work with git": self._git_command_handler,
+            "Use the git command line": self._git_command_handler,
             "Review a pull request": self._pull_request_handler,
             "Help": self.do_help,
-            "Use the command line": self.use_cmd,
             "Exit": self.do_exit,
         }
 
     @staticmethod
-    def do_exit(arg):
+    def do_exit(arg=None):
         """
         Handler for "exit" keyword
         :param arg: Optional args
@@ -45,7 +44,7 @@ class Shell(cmd.Cmd):
         return True
 
     @staticmethod
-    def do_quit(arg):
+    def do_quit(arg=None):
         """
         Handler for "quit" keyword
         :param arg: Optional args
@@ -117,8 +116,17 @@ class Shell(cmd.Cmd):
         """
         self.readme_generator.handle()
 
-    def _git_command_handler(self, line):
-        print("Called git command handler")
+    def _git_command_handler(self, line=None):
+        """
+        Handler for git commands
+        :param line: git command
+        :return: None
+        """
+        if not line:  # called by preloop
+            return
+        if line in self.exit_keywords:  # exit
+            self.do_exit()
+        self.command_handler.handle(line)  # handle git command
 
     def _issue_manager_handler(self):
         """
@@ -126,6 +134,3 @@ class Shell(cmd.Cmd):
         :return: None
         """
         self.issue_manager.handle()
-
-    def use_cmd(self):
-        pass
