@@ -47,6 +47,7 @@ class IssueManager:
             "Find Similar Issues": self._find_similar_issues,
             "Cancel": self.exit,
         }
+        self.issue_template = "Title: {title}\n Body: {body}"
 
     def __del__(self):
         pass
@@ -82,7 +83,7 @@ class IssueManager:
             self.actions.get(user_intention, self.exit)()
             user_intention = prompt(Questions.ISSUE_INTERACTION_QUESTIONS)["choice"]
 
-    def _list_issues(self, state=open):
+    def _list_issues(self):
         """
         List issues. Default state is open.
 
@@ -111,10 +112,9 @@ class IssueManager:
         :return: None
         """
         all_issues = self.git_helper.fetch_issues(state="open")
-        issue_text = "Title: {title}\n Body: {body}"
         all_embeddings = {
             issue.number: self.openai_agent.create_embedding(
-                issue_text.format(title=issue.title, body=issue.body)
+                self.issue_template.format(title=issue.title, body=issue.body)
             )["data"][0]["embedding"]
             for issue in all_issues
         }
@@ -124,8 +124,8 @@ class IssueManager:
     def _generate_similarity_groups(self, all_embeddings, threshold):
         """
         Generate similarity groups for duplicate issues
-        :param all_embeddings:
-        :param threshold:
+        :param all_embeddings: mapping of issue id to embeddings
+        :param threshold: threshold for cosine similarity
         :return:
         """
         groups = {}
@@ -140,7 +140,7 @@ class IssueManager:
                     issue = self.git_helper.get_issue(other_issue_id)
                     similar_issues.append((issue.title, issue.html_url, similarity))
             similar_issues.sort(key=lambda x: x[2], reverse=True)
-            groups[issue_id] = similar_issues
+            groups[self.git_helper.get_issue(int(issue_id)).title] = similar_issues
         return groups
 
     def _find_similar_issues(self, n=10):
@@ -152,11 +152,7 @@ class IssueManager:
 
         :return: None
         """
-        title, body = self._get_issue_description()
-        issue_text = f"Title: {title}\n Body: {body}"
-        new_issue_embedding = self.openai_agent.create_embedding(issue_text)["data"][0][
-            "embedding"
-        ]
+        new_issue_embedding = self.get_new_issue_embedding()
         issues = self.git_helper.fetch_issues(state="open")
         vectors = self.create_vectors(issues)
         self.pinecone_index.delete(delete_all=True, namespace=self.git_helper.repo_str)
@@ -171,6 +167,18 @@ class IssueManager:
             for id_ in similar_issue_ids
         ]
         utilities.print_table(data, headers=["Title", "URL"], show_index=True)
+
+    def get_new_issue_embedding(self):
+        """
+        Prompts the user for the issue title and description
+        Returns the embeddings for the issue text
+
+        :return: Embeddings for the issue text
+        """
+        title, body = self._get_issue_description()
+        issue_text = self.issue_template.format(title=title, body=body)
+        issue_text = simple_preprocess(remove_stopwords(issue_text), deacc=True)
+        return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]
 
     def _get_repo_url(self):
         """
@@ -212,47 +220,57 @@ class IssueManager:
     def query_db(self, embedding, n):
         """
         Query the database for similar issues
+        and return the top n matches
 
         :param embedding: new issue embedding
         :param n: number of similar issues to return
-        :return: list of similar issues
+        :return: list of "matches" dicts with id, score, values etc
         """
-        response = self.pinecone_index.query(
-            namespace=self.git_helper.repo_str,
-            top_k=n,
-            vector=embedding,
-        )
-        return response["matches"]
+        try:
+            response = self.pinecone_index.query(
+                namespace=self.git_helper.repo_str,
+                top_k=n,
+                vector=embedding,
+            )
+            return response["matches"]
+        except pinecone.exceptions.PineconeException as e:
+            print(f"Something went wrong while querying items in pinecone db.: {e}")
 
     def upsert_embeddings(self, vectors, namespace):
         """
         Upsert the embedding for an issue into the database
 
         :param vectors: list of vectors
-        :param namespace: namespace
+        :param namespace: namespace (repository name)
 
         :return: None
         """
-        self.pinecone_index.upsert(
-            vectors=vectors,
-            namespace=namespace,
-        )
+        try:
+            self.pinecone_index.upsert(
+                vectors=vectors,
+                namespace=namespace,
+            )
+        except pinecone.exceptions.PineconeException as e:
+            print(f"Something went wrong while updating items in pinecone db.: {e}")
 
     def create_vectors(self, issues):
         """
         Create vectors for a list of issues
+        Returns a list of tuples -> (issue_number, embeddings for the issue text)
 
         :param issues: list of issues
-        :return: list of vectors
+        :return: list of tuples with issue number and it's embeddings
         """
-        issue_text = "Title: {title}\n Body: {body}"
         return [
-            (str(issue.number), self._generate_embeddings(issue, issue_text))
-            for issue in issues
+            (str(issue.number), self._generate_embeddings(issue)) for issue in issues
         ]
 
-    def _generate_embeddings(self, issue, issue_text):
-        print("Checking issue:", issue.title)
-        issue_text = issue_text.format(title=issue.title, body=issue.body)
+    def _generate_embeddings(self, issue):
+        """
+        Returns vector embeddings for the issue
+        :param issue: GitHub Issue object
+        :return: Embeddings for the issue text
+        """
+        issue_text = self.issue_template.format(title=issue.title, body=issue.body)
         issue_text = simple_preprocess(remove_stopwords(issue_text), deacc=True)
         return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]
