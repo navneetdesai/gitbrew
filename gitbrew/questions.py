@@ -62,8 +62,9 @@ class Questions:
             "choices": [
                 "Generate a Readme",
                 "Work with github issues",
-                "Work with git",
+                "Use the git command line",
                 "Review a pull request",
+                "Help",
                 "Exit",
             ],
         }

@@ -8,6 +8,7 @@ from gitpy import GitPy
 from llms.openai import OpenAI
 from PyInquirer import prompt
 
+from gitbrew import utilities
 from gitbrew.constants import FILE_TYPES
 from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
 from gitbrew.prompts.summarize_file_prompt import SummarizeFilePrompt
@@ -98,7 +99,7 @@ class ReadmeGenerator:
         :return: markdown content as a string
         """
         # generate summaries for all files in the repo
-        repo = self.git_helper.get_repo(repo_url)
+        repo = self.git_helper.get_repo(utilities.extract_repo(repo_url))
         files = self.git_helper.get_content(repo)
         summaries = self.summarize_files(files)
         system_prompt = GenerateReadmePrompt.system_prompt

@@ -93,7 +93,8 @@ class PullRequestReviewer:
         :param state: State of the pull request
         :return: List of pull requests
         """
-        self.git_helper.repo_str = input("Enter the repository (user/repo): ")
+        repo_name = input("Enter the repository (user/repo): ")
+        self.git_helper.set_repo(repo_name)
         return self.git_helper.get_pull_requests(state=state)
 
     def _review_pull_request(self):
@@ -108,7 +109,7 @@ class PullRequestReviewer:
         if not match:
             print("Invalid URL")
             return
-        self.git_helper.repo_str = f"{match[1]}/{match[2]}"
+        self.git_helper.repo_name = f"{match[1]}/{match[2]}"
         pull_request = self.git_helper.get_pull_request(int(match[3]))
         reviews = self.review(pull_request)  # reviews is a dict of filename: review
         self.DEBUG and print(f"REVIEW: {reviews}")

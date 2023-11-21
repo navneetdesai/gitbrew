@@ -40,7 +40,7 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        self.DEBUG and self.console.log(f"LLM's answer: {answer}")
+        print(f"LLM's answer: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
             answer, GenerateCommandPrompt.prompt.format(user_intention=line)
         )
