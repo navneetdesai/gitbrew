@@ -38,7 +38,7 @@ class IssueManager:
         )
 
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
-        pinecone.init(api_key=os.getenv("PINECONE_API_KEY"))
+        pinecone.init(api_key=os.getenv("PINECONE_API_KEY"), environment="us-east1-gcp")
         self.pinecone_index = pinecone.Index("gitbrew")
         self.actions = {
             "List Issues": self._list_issues,
@@ -111,17 +111,17 @@ class IssueManager:
         :return: None
         """
         all_issues = self.git_helper.fetch_issues(state="open")
+        issue_text = "Title: {title}\n Body: {body}"
         all_embeddings = {
-            issue.title: self.openai_agent.create_embedding(issue)
+            issue.number: self.openai_agent.create_embedding(
+                issue_text.format(title=issue.title, body=issue.body)
+            )["data"][0]["embedding"]
             for issue in all_issues
         }
         groups = self._generate_similarity_groups(all_embeddings, threshold)
-        utilities.print_table(
-            groups, headers=["Issue ID", "Similar Issues"], show_index=True
-        )
+        utilities.print_dictionary(groups, headers=["Title", "URL", "Similarity"])
 
-    @staticmethod
-    def _generate_similarity_groups(all_embeddings, threshold):
+    def _generate_similarity_groups(self, all_embeddings, threshold):
         """
         Generate similarity groups for duplicate issues
         :param all_embeddings:
@@ -137,8 +137,9 @@ class IssueManager:
                     continue
                 similarity = cosine_similarity([embed], [other_embed])[0][0]
                 if similarity > threshold:
-                    similar_issues.append((other_issue_id, similarity))
-            similar_issues.sort(key=lambda x: x[1], reverse=True)
+                    issue = self.git_helper.get_issue(other_issue_id)
+                    similar_issues.append((issue.title, issue.html_url, similarity))
+            similar_issues.sort(key=lambda x: x[2], reverse=True)
             groups[issue_id] = similar_issues
         return groups
 
@@ -153,16 +154,23 @@ class IssueManager:
         """
         title, body = self._get_issue_description()
         issue_text = f"Title: {title}\n Body: {body}"
-        new_issue_embedding = self.openai_agent.create_embedding(issue_text)
+        new_issue_embedding = self.openai_agent.create_embedding(issue_text)["data"][0][
+            "embedding"
+        ]
         issues = self.git_helper.fetch_issues(state="open")
         vectors = self.create_vectors(issues)
+        self.pinecone_index.delete(delete_all=True, namespace=self.git_helper.repo_str)
         self.upsert_embeddings(vectors, self.git_helper.repo_str)
         similar_issue_ids = self.query_db(embedding=new_issue_embedding, n=n)
-        for id_ in similar_issue_ids:
-            print(
-                self.git_helper.repo.get_issue(id_["id"]).title,
-                self.git_helper.repo.get_issue(id_["id"]).html_url,
+        repo = self.git_helper.github.get_repo(self.git_helper.repo_str)
+        data = [
+            (
+                repo.get_issue(int(id_["id"])).title,
+                repo.get_issue(int(id_["id"])).html_url,
             )
+            for id_ in similar_issue_ids
+        ]
+        utilities.print_table(data, headers=["Title", "URL"], show_index=True)
 
     def _get_repo_url(self):
         """
@@ -203,22 +211,11 @@ class IssueManager:
 
     def query_db(self, embedding, n):
         """
-              Query the database for similar issues
+        Query the database for similar issues
 
-               {'matches': [{'id': 'C',
-                    'score': 0.0,
-                    'values': [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]},
-                   {'id': 'D',
-                    'score': 0.0799999237,
-                    'values': [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]},
-                   {'id': 'B',
-                    'score': 0.0800000429,
-                    'values': [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]}],
-        'namespace': ''}
-
-              :param embedding: new issue embedding
-              :param n: number of similar issues to return
-              :return: list of similar issues
+        :param embedding: new issue embedding
+        :param n: number of similar issues to return
+        :return: list of similar issues
         """
         response = self.pinecone_index.query(
             namespace=self.git_helper.repo_str,
@@ -250,10 +247,12 @@ class IssueManager:
         """
         issue_text = "Title: {title}\n Body: {body}"
         return [
-            (issue.id, self._generate_embeddings(issue, issue_text)) for issue in issues
+            (str(issue.number), self._generate_embeddings(issue, issue_text))
+            for issue in issues
         ]
 
     def _generate_embeddings(self, issue, issue_text):
-        issue_text = issue_text.format(issue.title, issue.body)
+        print("Checking issue:", issue.title)
+        issue_text = issue_text.format(title=issue.title, body=issue.body)
         issue_text = simple_preprocess(remove_stopwords(issue_text), deacc=True)
-        return self.openai_agent.create_embedding(issue_text)
+        return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]

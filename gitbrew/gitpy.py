@@ -21,7 +21,7 @@ class GitPy:
         self.repo = None
         self.github: Github = Github(token)
         self.verbose = verbose
-        self.debug = True
+        self.debug = False
 
     @staticmethod
     def extract_repo(url):
@@ -86,8 +86,13 @@ class GitPy:
         :return: None
         """
         repo = self.github.get_repo(self.repo_str)
-        repo.create_issue(*kwargs)
-        return True
+        try:
+            issue = repo.create_issue(*kwargs)
+            print(f"Issue created successfully.\nURL: {issue.html_url}")
+            return True
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def list_issues(self, state="open"):
         """
@@ -116,3 +121,7 @@ class GitPy:
     def get_pull_request(self, number):
         self.debug and print(f"Fetching PR#{number} from {self.repo_str}...")
         return self.github.get_repo(self.repo_str).get_pull(number)
+
+    def get_issue(self, number):
+        self.debug and print(f"Fetching issue#{number} from {self.repo_str}...")
+        return self.github.get_repo(self.repo_str).get_issue(number)

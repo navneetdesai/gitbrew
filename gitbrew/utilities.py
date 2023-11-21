@@ -19,3 +19,16 @@ def print_table(data, headers, print_format="fancy_grid", show_index=False):
         )
     else:
         raise TypeError("Data must be a tuple or list")
+
+
+def print_dictionary(data_dict, headers, print_format="fancy_grid"):
+    """
+    Prints a dictionary as a table using tabulate with print_format
+    :param data_dict: Dictionary
+    :param headers: List of headers
+    :param print_format: Format to print the table in
+    :return:
+    """
+    for k, v in data_dict.items():
+        print(f"\n{k}")
+        print_table(v, headers, print_format)
