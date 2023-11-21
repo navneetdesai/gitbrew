@@ -1,38 +1,24 @@
 import cmd
-import os
-import subprocess
 import sys
-from typing import Any
 
-import openai
-from dotenv import load_dotenv
-from gitpy import GitPy
 from PyInquirer import prompt
 from questions import Questions
 from rich.console import Console
-from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.generate_readme import ReadmeGenerator
 from gitbrew.issue_manager import IssueManager
-from gitbrew.llms import OpenAI
 from gitbrew.pull_requests import PullRequestReviewer
 
 
 class Shell(cmd.Cmd):
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
-    CHOICES = {"All issues": "all", "Open issues": "open", "Closed issues": "closed"}
-    MESSAGE = "Welcome to gitbrew! Enter `quit` or `exit` to exit the application.\n"
+    MESSAGE = "Welcome to gitbrew!\n Enter `help` for documentation. \nEnter `quit` or `exit` to exit the application.\n"
 
     def __init__(self, debug=False):
         super().__init__()
-        load_dotenv()
-        self.openai_agent = OpenAI(os.getenv("OPENAI_API_KEY"), temperature=0.35)
-        self.DEBUG = debug
-        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
-        self.embeddings_cache = {}  # local cache
-        self.command_handler = CommandHandler(debug=self.DEBUG)  # git command handler
+        self.command_handler = CommandHandler()  # git command handler
         self.pull_request_reviewer = (
             PullRequestReviewer()
         )  # pull request reviewer handler
@@ -44,6 +30,8 @@ class Shell(cmd.Cmd):
             "Work with github issues": self._issue_manager_handler,
             "Work with git": self._git_command_handler,
             "Review a pull request": self._pull_request_handler,
+            "Help": self.do_help,
+            "Use the command line": self.use_cmd,
             "Exit": self.do_exit,
         }
 
@@ -79,15 +67,16 @@ class Shell(cmd.Cmd):
             print("\nExiting...")
             sys.exit(0)
 
-    def do_help(self, arg: str):
+    def do_help(self, arg: str = ""):
         """
         Handler for "help" keyword
         :param arg: Optional args
         :return: True
         """
-        # fetch all methods that start with "do_"
-        # Todo: to be implemented
-        pass
+        if arg:
+            super().do_help(arg)
+        else:
+            ...
 
     def default(self, line: str) -> None:
         """
@@ -110,7 +99,7 @@ class Shell(cmd.Cmd):
         :return:
         """
         if line:
-            print(f"I don't understand what you mean by: {line}")
+            print(f"I don't understand what you mean by: {line}.\n")
         questions = Questions.CHOOSE_UTILITY
         self.UTILITIES.get(prompt(questions)["utility"])()
 
@@ -119,7 +108,6 @@ class Shell(cmd.Cmd):
         Handler for pull requests
         :return:
         """
-        self.DEBUG and print("Called pull request handler")
         self.pull_request_reviewer.handle()
 
     def _readme_generation_handler(self):
@@ -127,12 +115,17 @@ class Shell(cmd.Cmd):
         Handler for readme generation
         :return:
         """
-        self.DEBUG and print("Generating readme")
         self.readme_generator.handle()
 
     def _git_command_handler(self, line):
         print("Called git command handler")
 
     def _issue_manager_handler(self):
-        self.DEBUG and print("Called issue manager handler")
+        """
+        Handler for issue manager
+        :return: None
+        """
         self.issue_manager.handle()
+
+    def use_cmd(self):
+        pass

@@ -133,3 +133,21 @@ class FILE_TYPES:
         REQUIREMENT_FILES,
         DOCUMENTATION_FILES,
     )
+
+
+class IgnoredFiles:
+    """
+    Files that should be ignored while
+    reading the contents of a repository
+
+    """
+
+    FILE_TYPES = {
+        "git",
+        "github",
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "gitignore",
+    }

@@ -64,6 +64,8 @@ class Questions:
                 "Work with github issues",
                 "Work with git",
                 "Review a pull request",
+                "Help",
+                "Use the command line",
                 "Exit",
             ],
         }

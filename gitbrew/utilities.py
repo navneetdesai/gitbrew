@@ -1,3 +1,5 @@
+import re
+
 from tabulate import tabulate
 
 
@@ -32,3 +34,16 @@ def print_dictionary(data_dict, headers, print_format="fancy_grid"):
     for k, v in data_dict.items():
         print(f"\n{k}")
         print_table(v, headers, print_format)
+
+
+def extract_repo(url):
+    """
+    Extracts the repository string (typically acc/repo)
+     from an url
+    :param url: GitHub repo url
+    :return: repository string as acc/repo
+    """
+    if match := re.search(r"github.com/([\w-]+)/([\w-]+)", url):
+        if not match[1] or not match[2]:
+            raise ValueError("Invalid repository url")
+        return f"{match[1]}/{match[2]}"

@@ -75,7 +75,7 @@ class IssueManager:
         4. Find similar issues before raising a new one
         :return: None
         """
-        self.git_helper.repo_str = (
+        self.git_helper.repo_name = (
             self._get_repo_url()
         )  # will be valid or throw an error
         user_intention = prompt(Questions.ISSUE_INTERACTION_QUESTIONS)["choice"]
@@ -155,10 +155,10 @@ class IssueManager:
         new_issue_embedding = self.get_new_issue_embedding()
         issues = self.git_helper.fetch_issues(state="open")
         vectors = self.create_vectors(issues)
-        self.pinecone_index.delete(delete_all=True, namespace=self.git_helper.repo_str)
-        self.upsert_embeddings(vectors, self.git_helper.repo_str)
+        self.pinecone_index.delete(delete_all=True, namespace=self.git_helper.repo_name)
+        self.upsert_embeddings(vectors, self.git_helper.repo_name)
         similar_issue_ids = self.query_db(embedding=new_issue_embedding, n=n)
-        repo = self.git_helper.github.get_repo(self.git_helper.repo_str)
+        repo = self.git_helper.github.get_repo(self.git_helper.repo_name)
         data = [
             (
                 repo.get_issue(int(id_["id"])).title,
@@ -228,7 +228,7 @@ class IssueManager:
         """
         try:
             response = self.pinecone_index.query(
-                namespace=self.git_helper.repo_str,
+                namespace=self.git_helper.repo_name,
                 top_k=n,
                 vector=embedding,
             )

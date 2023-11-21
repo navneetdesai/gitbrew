@@ -2,8 +2,8 @@ import os
 
 import openai
 from dotenv import load_dotenv
-from langchain import Prompt, PromptTemplate
 
+from gitbrew import utilities
 from gitbrew.gitpy import GitPy
 
 
@@ -15,7 +15,7 @@ class CodeReader:
         github_token = os.getenv("GITHUB_TOKEN")
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.githandle = GitPy(token=github_token)
-        self.repo = self.githandle.get_repo(self.path)
+        self.repo = self.githandle.get_repo(utilities.extract_repo(self.path))
         self.files = self.githandle.get_content(self.repo)
 
     def read_repo(self):
