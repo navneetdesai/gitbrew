@@ -24,7 +24,7 @@ class IssueManager:
 
     CHOICES = {"All issues": "all", "Open issues": "open", "Closed issues": "closed"}
 
-    def __init__(self):
+    def __init__(self, logger):
         """
         Initialize the issue manager
 
@@ -36,6 +36,7 @@ class IssueManager:
             os.getenv("OPENAI_API_KEY"),
             embeddings_model="text-embedding-ada-002",
         )
+        self.logger = logger
 
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         pinecone.init(api_key=os.getenv("PINECONE_API_KEY"), environment="us-east1-gcp")
@@ -52,13 +53,13 @@ class IssueManager:
     def __del__(self):
         pass
 
-    @staticmethod
-    def exit(arg):
+    def exit(self, arg):
         """
         Handler for "exit" keyword
         :param arg: Optional args
         :return: True
         """
+        self.logger.info("Exiting issue manager")
         return True
 
     def handle(self):
@@ -78,7 +79,9 @@ class IssueManager:
         self.git_helper.repo_name = (
             self._get_repo_url()
         )  # will be valid or throw an error
+        self.logger.info(f"Using repo: {self.git_helper.repo_name}")
         user_intention = prompt(Questions.ISSUE_INTERACTION_QUESTIONS)["choice"]
+        self.logger.info(f"User intention: {user_intention}")
         while user_intention != "Cancel":
             self.actions.get(user_intention, self.exit)()
             user_intention = prompt(Questions.ISSUE_INTERACTION_QUESTIONS)["choice"]
@@ -91,6 +94,7 @@ class IssueManager:
         """
         questions = Questions.ISSUE_STATUS_QUESTIONS
         state = self.CHOICES.get(prompt(questions)["choice"])
+        self.logger.info(f"Listing issues with state: {state}")
         self.git_helper.list_issues(state)
 
     def _create_issue(self):
@@ -103,6 +107,7 @@ class IssueManager:
         :return: None
         """
         title, body = self._get_issue_description()
+        self.logger.info(f"Creating issue with title: {title}")
         self.git_helper.create_issue(title, body)
 
     def _find_duplicate_issues(self, threshold=0.75):
@@ -205,7 +210,7 @@ class IssueManager:
         else:
             questions = Questions.ASK_FOR_REPO_URL
             url = prompt(questions)["repo_url"]
-            return self.git_helper.extract_repo(url)
+            return utilities.extract_repo(url)
 
     @staticmethod
     def _get_issue_description():
@@ -234,7 +239,9 @@ class IssueManager:
             )
             return response["matches"]
         except pinecone.exceptions.PineconeException as e:
-            print(f"Something went wrong while querying items in pinecone db.: {e}")
+            self.logger.error(
+                f"Something went wrong while querying items in pinecone db.: {e}"
+            )
 
     def upsert_embeddings(self, vectors, namespace):
         """
@@ -251,7 +258,9 @@ class IssueManager:
                 namespace=namespace,
             )
         except pinecone.exceptions.PineconeException as e:
-            print(f"Something went wrong while updating items in pinecone db.: {e}")
+            self.logger.error(
+                f"Something went wrong while updating items in pinecone db.: {e}"
+            )
 
     def create_vectors(self, issues):
         """

@@ -9,7 +9,7 @@ from gitbrew.constants import IgnoredFiles
 
 
 class GitPy:
-    def __init__(self, token, repo=None):
+    def __init__(self, token, logger=None, repo=None):
         """
         Initialize the GitPy object, repository (acc/repo)
         and optionally the repo object (from gitpy.get_repo)
@@ -18,6 +18,7 @@ class GitPy:
         :param repo: Repository string (acc/repo)
         """
         self.github: Github = Github(token)  # GitHub object
+        self.logger = logger
         self._repo_name: str = repo  # Repository string (acc/repo)
         self.repo = None  # Repository object
 
@@ -50,6 +51,7 @@ class GitPy:
         :param value:
         :return:
         """
+        self.logger.info(f"Setting repository name to {value}")
         self._repo_name = value
 
     def set_repo(self, repo_name=None):
@@ -61,8 +63,10 @@ class GitPy:
         if repo_name:
             self.repo_name = repo_name
             self.repo = self.github.get_repo(repo_name)
+            self.logger.info(f"Setting repository to {repo_name}")
         elif self.repo_name:
             self.repo = self.github.get_repo(self.repo_name)
+            self.logger.info(f"Setting repository to {repo_name}")
         else:
             raise ValueError("Repository name cannot be empty")
 
@@ -77,8 +81,7 @@ class GitPy:
             self.repo = self.github.get_repo(self.repo_name)
         return self.repo
 
-    @staticmethod
-    def get_content(repo):
+    def get_content(self, repo):
         """
         Gets the contents of a repository
         Feature: Readme generation
@@ -90,11 +93,12 @@ class GitPy:
         while contents:
             file_content = contents.pop(0)
             if file_content.path.split(".")[-1] in IgnoredFiles.FILE_TYPES:
-                print(f"Skipping {file_content.path}")
+                self.logger.info(f"Skipping {file_content.path}")
                 continue
             if file_content.type == "dir":
                 contents.extend(repo.get_contents(file_content.path))
             else:
+                self.logger.info(f"Adding {file_content.path}")
                 content.append(file_content)
         return content
 
@@ -107,10 +111,10 @@ class GitPy:
         repo = self.github.get_repo(self.repo_name)
         try:
             issue = repo.create_issue(*kwargs)
-            print(f"Issue created successfully.\nURL: {issue.html_url}")
+            self.logger.info(f"Issue created successfully.\nURL: {issue.html_url}")
             return True
         except Exception as e:
-            print(f"Error: {e}")
+            self.logger.error(f"Error creating issue: {e}")
             return False
 
     def list_issues(self, state="open"):
@@ -134,6 +138,9 @@ class GitPy:
         :param kwargs:  state, assignee, creator, mentioned, labels, sort, direction, since
         :return: issues
         """
+        self.logger.info(
+            f"Fetching issues from {self.repo_name} with kwargs - {kwargs}"
+        )
         return self.repo.get_issues(**kwargs)
 
     def get_pull_requests(self, **kwargs):
@@ -142,6 +149,9 @@ class GitPy:
         :param kwargs: state, head, base, sort, direction
         :return: pull requests
         """
+        self.logger.info(
+            f"Fetching pull requests from {self.repo_name}" f" with kwargs - {kwargs}"
+        )
         return self.repo.get_pulls(**kwargs)
 
     def get_pull_request(self, number):
@@ -150,6 +160,7 @@ class GitPy:
         :param number: pull request number
         :return: pull request object
         """
+        self.logger.info(f"Fetching pull request #{number} from {self.repo_name}")
         return self.repo.get_pull(number)
 
     def get_issue(self, number):
@@ -158,4 +169,5 @@ class GitPy:
         :param number: issue number
         :return: issue object
         """
+        self.logger.info(f"Fetching issue #{number} from {self.repo_name}")
         return self.repo.get_issue(number)

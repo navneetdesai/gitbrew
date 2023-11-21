@@ -3,12 +3,12 @@ import sys
 
 from PyInquirer import prompt
 from questions import Questions
-from rich.console import Console
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.generate_readme import ReadmeGenerator
 from gitbrew.issue_manager import IssueManager
 from gitbrew.pull_requests import PullRequestReviewer
+from gitbrew.utilities import setup_logger
 
 
 class Shell(cmd.Cmd):
@@ -16,15 +16,15 @@ class Shell(cmd.Cmd):
     exit_keywords = ["exit", "quit"]
     MESSAGE = "Welcome to gitbrew!\n Enter `help` for documentation. \nEnter `quit` or `exit` to exit the application.\n"
 
-    def __init__(self, debug=False):
+    def __init__(self):
         super().__init__()
-        self.command_handler = CommandHandler()  # git command handler
-        self.pull_request_reviewer = (
-            PullRequestReviewer()
+        self.logger = setup_logger(save_logs=True, print_logs=True)
+        self.command_handler = CommandHandler(self.logger)  # git command handler
+        self.pull_request_reviewer = PullRequestReviewer(
+            self.logger
         )  # pull request reviewer handler
-        self.readme_generator = ReadmeGenerator()  # readme generator handler
-        self.issue_manager = IssueManager()  # issue manager handler
-        self.console = Console()
+        self.readme_generator = ReadmeGenerator(self.logger)  # readme generator handler
+        self.issue_manager = IssueManager(self.logger)  # issue manager handler
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
             "Work with github issues": self._issue_manager_handler,
@@ -34,22 +34,22 @@ class Shell(cmd.Cmd):
             "Exit": self.do_exit,
         }
 
-    @staticmethod
-    def do_exit(arg=None):
+    def do_exit(self, arg=None):
         """
         Handler for "exit" keyword
         :param arg: Optional args
         :return: True
         """
+        self.logger.info("Exiting...")
         return True
 
-    @staticmethod
-    def do_quit(arg=None):
+    def do_quit(self, arg=None):
         """
         Handler for "quit" keyword
         :param arg: Optional args
         :return: True
         """
+        self.logger.info("Exiting...")
         return True
 
     def cmdloop(self, intro=None):
@@ -72,6 +72,7 @@ class Shell(cmd.Cmd):
         :param arg: Optional args
         :return: True
         """
+        self.logger.info("## Documentation ##")
         if arg:
             super().do_help(arg)
         else:
@@ -107,6 +108,7 @@ class Shell(cmd.Cmd):
         Handler for pull requests
         :return:
         """
+        self.logger.info("Calling pull request reviewer...")
         self.pull_request_reviewer.handle()
 
     def _readme_generation_handler(self):
@@ -114,6 +116,7 @@ class Shell(cmd.Cmd):
         Handler for readme generation
         :return:
         """
+        self.logger.info("Calling readme generator...")
         self.readme_generator.handle()
 
     def _git_command_handler(self, line=None):
@@ -125,7 +128,9 @@ class Shell(cmd.Cmd):
         if not line:  # called by preloop
             return
         if line in self.exit_keywords:  # exit
+            self.logger.info("Exiting from git command handler...")
             self.do_exit()
+        self.logger.info("Calling git command handler...")
         self.command_handler.handle(line)  # handle git command
 
     def _issue_manager_handler(self):
@@ -133,4 +138,5 @@ class Shell(cmd.Cmd):
         Handler for issue manager
         :return: None
         """
+        self.logger.info("Calling issue manager handler...")
         self.issue_manager.handle()

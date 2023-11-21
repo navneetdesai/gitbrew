@@ -19,7 +19,7 @@ from .questions import Questions
 
 
 class CommandHandler:
-    def __init__(self, model="gpt-3.5-turbo", temperature=0.2, debug=False):
+    def __init__(self, logger, model="gpt-3.5-turbo", temperature=0.2, debug=False):
         load_dotenv()
         openai_api_key = os.getenv("OPENAI_API_KEY")
         self.console = Console()
@@ -27,6 +27,7 @@ class CommandHandler:
         self.openai_client = OpenAI(
             openai_api_key, chat_model=model, temperature=temperature
         )
+        self.logger = logger
         self.START_TAG = "<START>"
         self.END_TAG = "<END>"
         self.SEP_TAG = "<SEP>"
@@ -40,7 +41,7 @@ class CommandHandler:
         extracts commands from it and executes them
         """
         answer = self.ask_llm(line)
-        print(f"LLM's answer: {answer}")
+        self.logger.debug(f"LLM: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
             answer, GenerateCommandPrompt.prompt.format(user_intention=line)
         )
@@ -49,6 +50,7 @@ class CommandHandler:
     def ask_llm(self, line):
         _prompt = GenerateCommandPrompt.prompt.format(user_intention=line)
         _prompt = [{"role": "user", "content": _prompt}]
+        self.logger.debug(f"Prompt: {_prompt}")
         return self.openai_client.ask_llm(_prompt)
 
     def extract_commands(self, answer):
@@ -78,7 +80,7 @@ class CommandHandler:
         """
         for command in commands:
             if not command.startswith("git"):
-                print(command)
+                self.logger.info(f"Comment: {command}")
         for command in commands:
             command_list = command.split()
             command = self.sanitize_command(
@@ -92,23 +94,25 @@ class CommandHandler:
                 or command_list[1] in SafeCommands.commands
             ):
                 try:
-                    print(f"Executing: {command}")
+                    self.logger.debug(f"Executing: {command}")
                     # result = subprocess.check_output(
                     #     command_list,
                     #     cwd=".",
                     #     universal_newlines=True,
                     #     stderr=subprocess.STDOUT,
                     # )
-                    # self.debug and print(result)
+                    # self.logger.debug(f"Result: {result}")
                 except subprocess.CalledProcessError as e:
-                    print(f"Command '{e.cmd}' failed with return code {e.returncode}")
-                    print(f"Output:\n{e.output}")
+                    self.logger.error(
+                        f"Command '{e.cmd}' failed with return code {e.returncode}"
+                    )
+                    self.logger.error(f"Output:\n{e.output}")
                     break
                 except Exception as e:
-                    print(f"An error occurred: {e}")
+                    self.logger.error(f"Error: {e}")
                     break
             else:
-                print("Aborting...")
+                self.logger.info("Aborting...")
                 return
 
     def sanitize_command(self, command):
@@ -129,7 +133,7 @@ class CommandHandler:
             ]
             answer = prompt(question)["answer"]
             command = command.replace(f"<{place_holder[1]}>", answer)
-            self.DEBUG and print(command)
+            self.logger.info(f"Sanitized command: {command}")
         return command
 
     def get_user_confirmation(self, command):

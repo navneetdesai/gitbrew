@@ -20,7 +20,7 @@ class ReadmeGenerator:
     Generates readme from a GitHub repository
     """
 
-    def __init__(self):
+    def __init__(self, logger):
         self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
         self.openai_agent = OpenAI(
             os.getenv("OPENAI_API_KEY"),
@@ -29,6 +29,7 @@ class ReadmeGenerator:
             frequency_penalty=0.6,
             max_tokens=8000,
         )
+        self.logger = logger
 
     def handle(self):
         """
@@ -39,10 +40,12 @@ class ReadmeGenerator:
         """
         _prompt = Questions.README_INPUT_URL
         repo_url = prompt(_prompt)["repo_url"].strip()
+        self.logger.info(f"Generating readme for {repo_url}")
         readme_content = self.generate_readme(repo_url)
         _prompt = Questions.README_FILE_NAME
         file_name = prompt(_prompt)["file_name"].strip()
         self._process_file_name(file_name)
+        self.logger.info(f"Writing readme to {file_name}")
         self._write_readme(file_name, readme_content)
 
     @staticmethod
@@ -90,6 +93,7 @@ class ReadmeGenerator:
             filename=file, content=base64.b64decode(file.content).decode("utf-8")
         )
         message = self.openai_agent.create_message(system_prompt, user_prompt)
+        self.logger.info(f"Summarization prompt for {file}: {message[25:]}...")
         return self.openai_agent.ask_llm(message)
 
     def generate_readme(self, repo_url):
@@ -99,7 +103,8 @@ class ReadmeGenerator:
         :return: markdown content as a string
         """
         # generate summaries for all files in the repo
-        repo = self.git_helper.get_repo(utilities.extract_repo(repo_url))
+        self.git_helper.set_repo(utilities.extract_repo(repo_url))
+        repo = self.git_helper.get_repo()
         files = self.git_helper.get_content(repo)
         summaries = self.summarize_files(files)
         system_prompt = GenerateReadmePrompt.system_prompt
@@ -128,6 +133,8 @@ class ReadmeGenerator:
         :param file_name:
         :return:
         """
-        if not file_name or not file_name.contains("."):
-            file_name = "README.md"
+        if not file_name:
+            return "README.md"
+        if not file_name.contains("."):
+            return file_name + ".md"
         return file_name

@@ -12,7 +12,7 @@ from gitbrew.gitpy import GitPy
 from gitbrew.llms import OpenAI
 from gitbrew.prompts.pull_request_review_prompt import PullRequestReviewPrompt
 from gitbrew.questions import Questions
-from gitbrew.utilities import print_table
+from gitbrew.utilities import print_table, setup_logger
 
 
 class PullRequestReviewer:
@@ -20,7 +20,7 @@ class PullRequestReviewer:
     Pull request reviewer class
     """
 
-    def __init__(self):
+    def __init__(self, logger):
         """
         Initialize the pull request reviewer
         openai_agent: OpenAI agent
@@ -34,13 +34,13 @@ class PullRequestReviewer:
             frequency_penalty=0.6,
             max_tokens=64000,
         )
-        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
+        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"), logger=logger)
         self.actions = {
             "List pull requests": self._list_pull_requests,
             "Review a pull request": self._review_pull_request,
             "Exit": self._exit,
         }
-        self.DEBUG = True
+        self.logger = logger
         self.NON_CODE_FILES = (
             ".txt",
             ".md",
@@ -61,6 +61,7 @@ class PullRequestReviewer:
         Exit handler
         :return:
         """
+        self.logger.info("Returning from pull request reviewer...")
         return
 
     def handle(self):
@@ -70,6 +71,7 @@ class PullRequestReviewer:
         :return:
         """
         choice = prompt(Questions.PR_OPTIONS)["pr_option"]
+        self.logger.info(f"User selected: {choice} in PR handler...")
         if selection := self.actions.get(choice):
             selection()
 
@@ -78,6 +80,7 @@ class PullRequestReviewer:
         List all pull requests from a repo
         :return:
         """
+        self.logger.info("Listing pull requests by number, title, url...")
         print_table(
             [
                 [request.number, request.title, request.html_url]
@@ -105,14 +108,15 @@ class PullRequestReviewer:
         :return:
         """
         url = input("Enter the pull request URL: ").strip()
+        self.logger.info(f"Reviewing pull request. URL: {url}")
         match = re.search(self.PULL_REQUEST_PATTERN, url)
         if not match:
-            print("Invalid URL")
+            self.logger.error("Invalid pull request URL. Exiting...")
             return
         self.git_helper.repo_name = f"{match[1]}/{match[2]}"
         pull_request = self.git_helper.get_pull_request(int(match[3]))
         reviews = self.review(pull_request)  # reviews is a dict of filename: review
-        self.DEBUG and print(f"REVIEW: {reviews}")
+        self.logger.info(f"Review generated successfully.\n\n. {reviews}")
         self._post_review_with_confirmation(pull_request, reviews)
 
     def _post_review_with_confirmation(self, pull_request, reviews):
@@ -126,7 +130,7 @@ class PullRequestReviewer:
         if prompt(question)["confirmation"] == "Yes":
             self.post_review(reviews, pull_request)
         else:
-            print("Review cancelled.")
+            self.logger.info("Review not posted.")
 
     def review(self, pr):
         """
@@ -137,12 +141,12 @@ class PullRequestReviewer:
         """
 
         title, body, diff = pr.title, pr.body, pr.get_files()
-        self.DEBUG and print("Reviewing PR: ", title)
+        self.logger.info("Reviewing PR: ", title)
         reviews = {}
         for file in diff:  # Get review for each file separately
             # Skip files non-code files
             if file.filename.endswith(self.NON_CODE_FILES):
-                self.DEBUG and print("Skipping file: ", file.filename)
+                self.logger.info("Skipping file: ", file.filename)
                 continue
             self.create_review(body, file, reviews, title)
         return reviews
@@ -158,11 +162,10 @@ class PullRequestReviewer:
         :return:
         """
         content = file.patch
-        self.DEBUG and print("Reviewing file: ", file.filename)
+        self.logger.info("Reviewing file: ", file.filename)
         _prompt = self.create_prompt(body, content, title)
         review = self.openai_agent.ask_llm(_prompt).replace("\n", "<br>")
         review = review.split("<br>")
-        print(review)
         reviews[file.filename] = review
 
     @staticmethod
@@ -198,4 +201,4 @@ class PullRequestReviewer:
             pull_request.create_review(
                 body=f"{self.HEADER.format(filename=file)}{review}", event="COMMENT"
             )
-            print(f"Review posted successfully for {file}.")
+            self.logger.info(f"Review posted successfully for {file}.")
