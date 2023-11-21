@@ -11,9 +11,9 @@ class Questions:
             "message": "What would you like to do?",
             "choices": [
                 "List Issues",
-                "Create Issue",
+                "Create an Issue",
                 "Find Duplicate Issues",
-                "Find Issues by Label",
+                "Find Similar Issues",
                 "Cancel",
             ],
         }

@@ -14,6 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.generate_readme import ReadmeGenerator
+from gitbrew.issue_manager import IssueManager
 from gitbrew.llms import OpenAI
 from gitbrew.pull_requests import PullRequestReviewer
 
@@ -36,6 +37,7 @@ class Shell(cmd.Cmd):
             PullRequestReviewer()
         )  # pull request reviewer handler
         self.readme_generator = ReadmeGenerator()  # readme generator handler
+        self.issue_manager = IssueManager()  # issue manager handler
         self.console = Console()
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
@@ -132,151 +134,5 @@ class Shell(cmd.Cmd):
         print("Called git command handler")
 
     def _issue_manager_handler(self):
-        print("Called issue manager handler")
-
-    def do_issue_interaction(self):
-        """
-        Handler for "issue interaction" keyword
-        :return: None
-        """
-        # ask which repo they want to interact with
-        # the remote repo or a custom repo
-        questions = Questions.REPO_URL_QUESTIONS
-        if prompt(questions)["repo_choice"] == "Remote":
-            try:
-                command = ["git", "remote", "get-url", "origin"]
-                result = subprocess.check_output(
-                    command, cwd=".", universal_newlines=True
-                )
-                print(f"Target repository: {self.git_helper.repo_str}")
-                url = result.strip()
-                # Todo: Needs to be better designed
-                repo = url.split(":")[1].split(".")[0]
-                # self.git_helper.repo_str = repo
-            except subprocess.CalledProcessError as e:
-                print(f"Error: {e}")
-                sys.exit(1)
-        else:
-            # url = https://github.com/quora/pyanalyze # for testing
-            questions = Questions.ASK_FOR_REPO_URL
-            url = prompt(questions)["repo_url"]
-            self.git_helper.repo_str = self.git_helper.extract_repo(url)
-
-        questions = Questions.ISSUE_INTERACTION_QUESTIONS
-        answers = prompt(questions)
-        choice = answers["choice"]
-
-        if choice == "List Issues":
-            self._list_issues()
-        elif choice == "Create Issue":
-            self._create_issue()
-        elif choice == "Find Duplicate Issues":
-            duplicate_issues = self._retrieve_duplicate_issues(
-                self._prompt_title_body()
-            )
-            for issue in duplicate_issues:
-                print(issue)
-        elif choice == "Find Issues by Label":
-            label = input("Enter the label: ")
-            issues = self.git_helper.fetch_issues(labels=[label])
-            for issue in issues:
-                print(issue.title, issue.url, sep=": ")
-        elif choice == "Cancel":
-            print("Cancelling...")
-            return
-
-    def _list_issues(self):
-        """
-        Lists issues in a repository based on status
-        Default status: open
-        Status can be: open, closed, all
-        :return:
-        """
-        questions = Questions.ISSUE_STATUS_QUESTIONS
-        self.git_helper.list_issues(self.CHOICES.get(prompt(questions)["choice"]))
-
-    def _retrieve_duplicate_issues(self, title=None, body=None, n=10):
-        """
-        Returns top 10 open issues that are most likely to be similar to the new issue
-        :param title: Title of the new issue
-        :param body: Body of the new issue
-        :return: List of duplicate issues (top 10)
-        """
-        open_issues = self.git_helper.fetch_issues(state="open")
-        issue_text = [f"{issue.title}: {issue.body[:1000]}" for issue in open_issues]
-        new_issue_text = f'{title or ""}: {body or ""}'
-        indices: list[tuple[int, Any]] = self._find_similar_issues_openai(
-            new_issue_text, issue_text, n
-        )
-
-        return [
-            f"{open_issues[index[0]].title}:{open_issues[index[0]].html_url}"
-            for index in indices
-        ]
-
-    def _create_issue(self):
-        """
-        Create an issue from the command line
-        :return:
-        """
-        body, title = self._prompt_title_body()
-        yn = input(
-            "Would you like to check if this issue has already been raised? (y/n): "
-        )
-        duplicate_issues = self._retrieve_duplicate_issues(title, body)
-        if yn == "y" and duplicate_issues:
-            print("Possible duplicate issues found:")
-            for issue in duplicate_issues:
-                print(issue)
-        yn = input("Would you like to create this issue? (y/n): ")
-        if yn == "y":
-            self.git_helper.create_issue(title, body)
-        else:
-            print("Issue not created")
-
-    @staticmethod
-    def _prompt_title_body():
-        title = input("What's the title of the new issue? ")
-        body = input("What's the description the new issue? ")
-        title = "Add validation for strings using regular expressions"
-        body = "We could add more robustness to user input validation by creating a class that uses reg expr"
-        return body, title
-
-    def triage_issue(self):
-        """
-        Triage issues
-        :return:
-        """
-        pass
-
-    def _find_similar_issues_openai(self, new_issue_text, issue_text, n=10):
-        """
-        Find similar issues based on cosine similarity
-        :param new_issue_text:
-        :param issue_text:
-        :return:
-        """
-        if self.git_helper.repo_str in self.embeddings_cache:
-            print("Using cached embeddings")
-            embeddings = self.embeddings_cache[self.git_helper.repo_str]
-        else:
-            # print("Generating embeddings")
-            # Todo: Reuse openai methods instead of this
-            embeddings = self.embeddings_cache[
-                self.git_helper.repo_str
-            ] = openai.Embedding.create(
-                input=issue_text,
-                model="text-embedding-ada-002",
-            )
-        new_issue_embedding = openai.Embedding.create(
-            input=new_issue_text,
-            model="text-embedding-ada-002",
-        )
-        y = new_issue_embedding["data"][0]["embedding"]
-        scores = []
-        for index, embedding in enumerate(embeddings["data"]):
-            x = embedding["embedding"]
-            similarity = cosine_similarity([x], [y])[0][0]
-            scores.append((index, similarity))
-
-        return sorted(scores, reverse=True, key=lambda m: m[1])[:n]
+        self.DEBUG and print("Called issue manager handler")
+        self.issue_manager.handle()
