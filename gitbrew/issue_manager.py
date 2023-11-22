@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 
+import github.PaginatedList
 import pinecone
 from gensim.parsing.preprocessing import remove_stopwords
 from gensim.utils import simple_preprocess
@@ -112,7 +113,7 @@ class IssueManager:
         self.logger.info(f"Creating issue with title: {title}")
         self.git_helper.create_issue(title, body)
 
-    def _find_duplicate_issues(self, threshold=0.75):
+    def _find_duplicate_issues(self, threshold=0.8):
         """
         Group duplicate issues in the repository
 
@@ -161,20 +162,61 @@ class IssueManager:
         :return: None
         """
         new_issue_embedding = self.get_new_issue_embedding()
-        issues = self.git_helper.fetch_issues(state="open")
-        vectors = self.create_vectors(issues)
-        self.pinecone_index.delete(delete_all=True, namespace=self.git_helper.repo_name)
-        self.upsert_embeddings(vectors, self.git_helper.repo_name)
-        similar_issue_ids = self.query_db(embedding=new_issue_embedding, n=n)
+        issues: github.PaginatedList.PaginatedList = self.git_helper.fetch_issues(
+            state="open"
+        )
+        if not issues.totalCount:
+            print("--- There are no open issues in this repository. ---")
+            self.logger.info("No issues found. Exiting...")
+            return
+        last_opened_issue_number = max((issue.number for issue in issues))
+        matches = self.generate_matches_from_pinecone(
+            last_opened_issue_number, n, new_issue_embedding, issues
+        )
         repo = self.git_helper.github.get_repo(self.git_helper.repo_name)
+
         data = [
             (
                 repo.get_issue(int(id_["id"])).title,
                 repo.get_issue(int(id_["id"])).html_url,
             )
-            for id_ in tqdm(similar_issue_ids)
+            for id_ in tqdm(sorted(matches, key=lambda x: x["score"], reverse=True))
+            if id_["id"] != "LAST"
         ]
         utilities.print_table(data, headers=["Title", "URL"], show_index=True)
+
+    def generate_matches_from_pinecone(
+        self, last_opened_issue_number, n, new_issue_embedding, issues
+    ):
+        """
+        Generate matches from pinecone db
+        If the most recent issue in the repository is in pinecone db, fetch directly form pinecone db
+        otherwise upsert all issues and their embeddings
+        :param last_opened_issue_number:
+        :param n:
+        :param new_issue_embedding:
+        :param issues:
+        :return:
+        """
+        db_last_opened_issue_number = self.query_db(
+            [last_opened_issue_number] * 1536, 1, True
+        )[0]["values"][0]
+        self.logger.info(
+            f"Last opened issue number in the repo: {last_opened_issue_number}"
+        )
+        self.logger.info(
+            f"Last opened issue number in the db: {db_last_opened_issue_number}"
+        )
+        if last_opened_issue_number == db_last_opened_issue_number:
+            self.logger.info("All issues are already pineconed. Skipping upsert.")
+        else:
+            self.logger.info("Upserting embeddings into pinecone db.")
+            vectors = self.create_vectors(issues)
+            self.upsert_embeddings(
+                vectors, self.git_helper.repo_name, last_opened_issue_number
+            )
+        matches: list = self.query_db(embedding=new_issue_embedding, n=n)
+        return matches
 
     def get_new_issue_embedding(self):
         """
@@ -189,7 +231,7 @@ class IssueManager:
         return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]
 
     @staticmethod
-    def _get_repo_url(self):
+    def _get_repo_url():
         """
         Get the repo url from the user or remote
 
@@ -226,11 +268,12 @@ class IssueManager:
         body = input("What's the description the new issue? ")
         return title, body
 
-    def query_db(self, embedding, n):
+    def query_db(self, embedding, n, return_values=False):
         """
         Query the database for similar issues
         and return the top n matches
 
+        :param return_values:
         :param embedding: new issue embedding
         :param n: number of similar issues to return
         :return: list of "matches" dicts with id, score, values etc
@@ -240,6 +283,7 @@ class IssueManager:
                 namespace=self.git_helper.repo_name,
                 top_k=n,
                 vector=embedding,
+                include_values=return_values,
             )
             return response["matches"]
         except pinecone.exceptions.PineconeException as e:
@@ -247,10 +291,11 @@ class IssueManager:
                 f"Something went wrong while querying items in pinecone db.: {e}"
             )
 
-    def upsert_embeddings(self, vectors, namespace):
+    def upsert_embeddings(self, vectors, namespace, last_opened_issue_number):
         """
         Upsert the embedding for an issue into the database
 
+        :param last_opened_issue_number:
         :param vectors: list of vectors
         :param namespace: namespace (repository name)
 
@@ -259,6 +304,11 @@ class IssueManager:
         try:
             self.pinecone_index.upsert(
                 vectors=vectors,
+                namespace=namespace,
+            )
+
+            self.pinecone_index.upsert(
+                vectors=[("LAST", [last_opened_issue_number] * 1536)],
                 namespace=namespace,
             )
         except pinecone.exceptions.PineconeException as e:

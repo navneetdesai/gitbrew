@@ -175,3 +175,4 @@ class Shell(cmd.Cmd):
         """
         self.logger.info("Calling issue manager handler...")
         self.issue_manager.handle()
+        self.preloop()

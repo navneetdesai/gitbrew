@@ -66,7 +66,7 @@ class GitPy:
             self.logger.info(f"Setting repository to {repo_name}")
         elif self.repo_name:
             self.repo = self.github.get_repo(self.repo_name)
-            self.logger.info(f"Setting repository to {repo_name}")
+            self.logger.info(f"Setting repository to {self.repo}")
         else:
             raise ValueError("Repository name cannot be empty")
 
@@ -115,11 +115,12 @@ class GitPy:
         repo = self.github.get_repo(self.repo_name)
         try:
             issue = repo.create_issue(*kwargs)
-            self.logger.info(f"Issue created successfully.\nURL: {issue.html_url}")
-            return True
+            message = f"Issue created successfully.URL: {issue.html_url}"
+            self.logger.info(message)
+            print(message)
         except Exception as e:
             self.logger.error(f"Error creating issue: {e}")
-            return False
+            print(f"gitbrew> Error creating issue: {e}. Please try again later.")
 
     def list_issues(self, state="open"):
         """
