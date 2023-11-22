@@ -3,6 +3,7 @@ import sys
 
 from PyInquirer import prompt
 from questions import Questions
+from rich.console import Console
 
 from gitbrew.command_handler import CommandHandler
 from gitbrew.generate_readme import ReadmeGenerator
@@ -12,9 +13,42 @@ from gitbrew.utilities import setup_logger
 
 
 class Shell(cmd.Cmd):
+    """
+    Select one of the following options:
+    1. Generate a Readme
+        - Generate a readme for your repository
+        - The application will ask you for the repository url and the path to the readme template
+        - To aid the tool, you could create a draft readme with some information about your project
+
+    2. Work with GitHub issues
+        - Manage GitHub issues
+           -  Find duplicate issues in a repository
+           - Find similar issues in the repository before you create a new one
+           -  Create a new issue from the terminal
+    3. Use the git command line
+        - Use git, but with natural language
+        - Example - `Push all changes to the remote repository`
+            You will be asked for confirmation before the command is executed
+            Choose one of the following options for each command
+            - Yes (Execute the command)
+            - No (Abort the command)
+            - Explain (Explains the command concisely)
+
+            If the instruction is unclear, the application will ask for clarification.
+
+            For better results, be as precise as possible.
+
+    4. Review a pull request
+        - Review pull requests
+    5. Help
+        - Read documentation
+    6. Exit
+        - Exits the application
+    """
+
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
-    MESSAGE = "Welcome to gitbrew!\n Enter `help` for documentation. \nEnter `quit` or `exit` to exit the application.\n"
+    MESSAGE = "Welcome to gitbrew!\nEnter `help` for documentation. \nEnter `quit` or `exit` to exit the application.\n"
 
     def __init__(self):
         super().__init__()
@@ -25,6 +59,7 @@ class Shell(cmd.Cmd):
         )  # pull request reviewer handler
         self.readme_generator = ReadmeGenerator(self.logger)  # readme generator handler
         self.issue_manager = IssueManager(self.logger)  # issue manager handler
+        self.console = Console()
         self.UTILITIES = {
             "Generate a Readme": self._readme_generation_handler,
             "Work with github issues": self._issue_manager_handler,
@@ -41,7 +76,7 @@ class Shell(cmd.Cmd):
         :return: True
         """
         self.logger.info("Exiting...")
-        return True
+        sys.exit(0)
 
     def do_quit(self, arg=None):
         """
@@ -50,7 +85,7 @@ class Shell(cmd.Cmd):
         :return: True
         """
         self.logger.info("Exiting...")
-        return True
+        sys.exit(0)
 
     def cmdloop(self, intro=None):
         """
@@ -72,11 +107,9 @@ class Shell(cmd.Cmd):
         :param arg: Optional args
         :return: True
         """
-        self.logger.info("## Documentation ##")
-        if arg:
-            super().do_help(arg)
-        else:
-            ...
+        if not arg:
+            self.console.print(self.__doc__)
+        self.cmdloop(intro=self.MESSAGE)
 
     def default(self, line: str) -> None:
         """
@@ -110,6 +143,7 @@ class Shell(cmd.Cmd):
         """
         self.logger.info("Calling pull request reviewer...")
         self.pull_request_reviewer.handle()
+        self.preloop()
 
     def _readme_generation_handler(self):
         """
@@ -118,6 +152,7 @@ class Shell(cmd.Cmd):
         """
         self.logger.info("Calling readme generator...")
         self.readme_generator.handle()
+        self.preloop()
 
     def _git_command_handler(self, line=None):
         """

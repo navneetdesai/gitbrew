@@ -94,7 +94,7 @@ class CommandHandler:
                 or command_list[1] in SafeCommands.commands
             ):
                 try:
-                    self.logger.debug(f"Executing: {command}")
+                    print(f"Executing: {command}")
                     # result = subprocess.check_output(
                     #     command_list,
                     #     cwd=".",

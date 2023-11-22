@@ -188,6 +188,7 @@ class IssueManager:
         issue_text = simple_preprocess(remove_stopwords(issue_text), deacc=True)
         return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]
 
+    @staticmethod
     def _get_repo_url(self):
         """
         Get the repo url from the user or remote

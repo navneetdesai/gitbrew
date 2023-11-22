@@ -22,7 +22,7 @@ class ReadmeGenerator:
     """
 
     def __init__(self, logger):
-        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
+        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"), logger=logger)
         self.openai_agent = OpenAI(
             os.getenv("OPENAI_API_KEY"),
             temperature=0.4,
@@ -42,7 +42,14 @@ class ReadmeGenerator:
         _prompt = Questions.README_INPUT_URL
         repo_url = prompt(_prompt)["repo_url"].strip()
         self.logger.info(f"Generating readme for {repo_url}")
-        readme_content = self.generate_readme(repo_url)
+        try:
+            readme_content = self.generate_readme(repo_url)
+        except Exception as e:
+            self.logger.error(f"Error generating readme: {e}")
+            print(
+                "gitbrew> Error generating readme. Please try again with a valid url."
+            )
+            return
         _prompt = Questions.README_FILE_NAME
         file_name = prompt(_prompt)["file_name"].strip()
         self._process_file_name(file_name)
@@ -136,6 +143,6 @@ class ReadmeGenerator:
         """
         if not file_name:
             return "README.md"
-        if not file_name.contains("."):
+        if "." not in file_name:
             return file_name + ".md"
         return file_name

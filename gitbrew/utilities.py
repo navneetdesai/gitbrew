@@ -5,6 +5,8 @@ from datetime import datetime
 from rich.logging import RichHandler
 from tabulate import tabulate
 
+from gitbrew.exceptions import InvalidRepositoryException
+
 
 def print_table(data, headers, print_format="fancy_grid", show_index=False):
     """
@@ -48,7 +50,7 @@ def extract_repo(url):
     """
     if match := re.search(r"github.com/([\w-]+)/([\w-]+)", url):
         if not match[1] or not match[2]:
-            raise ValueError("Invalid repository url")
+            raise InvalidRepositoryException("Invalid repository url")
         return f"{match[1]}/{match[2]}"
 
 

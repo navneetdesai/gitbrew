@@ -93,12 +93,16 @@ class GitPy:
         while contents:
             file_content = contents.pop(0)
             if file_content.path.split(".")[-1] in IgnoredFiles.FILE_TYPES:
-                self.logger.info(f"Skipping {file_content.path}")
+                self.logger.info(
+                    f"Skipping {file_content.path} while gathering repository contents."
+                )
                 continue
             if file_content.type == "dir":
                 contents.extend(repo.get_contents(file_content.path))
             else:
-                self.logger.info(f"Adding {file_content.path}")
+                self.logger.info(
+                    f"Adding {file_content.path} while gathering repository contents."
+                )
                 content.append(file_content)
         return content
 

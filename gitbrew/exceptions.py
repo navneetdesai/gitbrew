@@ -5,3 +5,11 @@ class InvalidAnswerFormatException(Exception):
     """
 
     pass
+
+
+class InvalidRepositoryException(Exception):
+    """
+    Raised when the repository is invalid
+    """
+
+    pass

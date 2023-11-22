@@ -142,12 +142,4 @@ class IgnoredFiles:
 
     """
 
-    FILE_TYPES = {
-        "git",
-        "github",
-        "png",
-        "jpg",
-        "jpeg",
-        "gif",
-        "gitignore",
-    }
+    FILE_TYPES = {"git", "github", "png", "jpg", "jpeg", "gif", "gitignore", "txt"}
