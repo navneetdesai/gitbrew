@@ -1,4 +1,7 @@
+import time
+
 from shell import Shell
+from tqdm import tqdm
 
 
 def main():

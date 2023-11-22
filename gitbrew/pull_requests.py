@@ -7,12 +7,13 @@ import os
 import re
 
 from PyInquirer import prompt
+from tqdm import tqdm
 
 from gitbrew.gitpy import GitPy
 from gitbrew.llms import OpenAI
 from gitbrew.prompts.pull_request_review_prompt import PullRequestReviewPrompt
 from gitbrew.questions import Questions
-from gitbrew.utilities import print_table, setup_logger
+from gitbrew.utilities import print_table
 
 
 class PullRequestReviewer:
@@ -78,13 +79,13 @@ class PullRequestReviewer:
     def _list_pull_requests(self):
         """
         List all pull requests from a repo
-        :return:
+        :return: None
         """
         self.logger.info("Listing pull requests by number, title, url...")
         print_table(
             [
                 [request.number, request.title, request.html_url]
-                for request in self._fetch_pull_requests()
+                for request in tqdm(self._fetch_pull_requests())
             ],
             headers=["Number", "Title", "URL"],
         )
@@ -153,7 +154,7 @@ class PullRequestReviewer:
 
     def create_review(self, body, file, reviews, title):
         """
-        Create a review for a file and add them to reviews dictionary
+        Create a review for a file and add them to reviews dictionary.
 
         :param body:
         :param file:
@@ -196,7 +197,7 @@ class PullRequestReviewer:
         :param pull_request: The pull request object
         :return: None
         """
-        for file, review in reviews.items():
+        for file, review in tqdm(reviews.items()):
             review = "\n".join(review)
             pull_request.create_review(
                 body=f"{self.HEADER.format(filename=file)}{review}", event="COMMENT"

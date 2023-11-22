@@ -4,7 +4,7 @@
 
 
 class FindSimilarIssuesPrompt:
-    FIND_SIMILAR_ISSUES_PROMPT = """
+    template = """
         Given a title and body of an issue, find similar issues.
         You will be given existing issues as a list of strings that have the title 
         and the body separated by a ':'. For example: Title: Body

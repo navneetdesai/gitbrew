@@ -61,7 +61,6 @@ class PullRequestReviewPrompt:
         
         - [ ] **Documentation**
           - [ ] Code is well-documented (inline comments, docstrings)
-          - [ ] README and other documentation is updated
           - [ ] Changes to configurations are documented
         
         - [ ] **Potential bugs**
@@ -76,5 +75,5 @@ class PullRequestReviewPrompt:
         
         - [ ] **Approve**: The changes are good to be merged.
         - [ ] **Request Changes**: Further improvements or fixes are needed.
-        - [ ] **Needs futher manual review** : The changes are not clear and need further manual review.
+        - [ ] **Needs further manual review** : The changes are not clear and need further manual review.
         """

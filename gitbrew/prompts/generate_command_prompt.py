@@ -1,5 +1,5 @@
 class GenerateCommandPrompt:
-    prompt = """
+    template = """
     You are given the user's intention in natural language.
     Generate a set of git commands that will achieve the user's intention. These commands should be surrounded by <START> and <END>.
     Separate commands should be separated by <SEP>.

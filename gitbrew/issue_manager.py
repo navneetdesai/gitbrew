@@ -10,6 +10,7 @@ from gensim.parsing.preprocessing import remove_stopwords
 from gensim.utils import simple_preprocess
 from PyInquirer import prompt
 from sklearn.metrics.pairwise import cosine_similarity
+from tqdm import tqdm
 
 from gitbrew import utilities
 from gitbrew.gitpy import GitPy
@@ -38,7 +39,7 @@ class IssueManager:
         )
         self.logger = logger
 
-        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"))
+        self.git_helper = GitPy(os.getenv("GITHUB_TOKEN"), logger=logger)
         pinecone.init(api_key=os.getenv("PINECONE_API_KEY"), environment="us-east1-gcp")
         self.pinecone_index = pinecone.Index("gitbrew")
         self.actions = {
@@ -79,6 +80,7 @@ class IssueManager:
         self.git_helper.repo_name = (
             self._get_repo_url()
         )  # will be valid or throw an error
+        self.git_helper.set_repo()
         self.logger.info(f"Using repo: {self.git_helper.repo_name}")
         user_intention = prompt(Questions.ISSUE_INTERACTION_QUESTIONS)["choice"]
         self.logger.info(f"User intention: {user_intention}")
@@ -116,12 +118,13 @@ class IssueManager:
 
         :return: None
         """
+
         all_issues = self.git_helper.fetch_issues(state="open")
         all_embeddings = {
             issue.number: self.openai_agent.create_embedding(
                 self.issue_template.format(title=issue.title, body=issue.body)
             )["data"][0]["embedding"]
-            for issue in all_issues
+            for issue in tqdm(all_issues)
         }
         groups = self._generate_similarity_groups(all_embeddings, threshold)
         utilities.print_dictionary(groups, headers=["Title", "URL", "Similarity"])
@@ -135,7 +138,7 @@ class IssueManager:
         """
         groups = {}
         items = all_embeddings.items()
-        for issue_id, embed in items:
+        for issue_id, embed in tqdm(items):
             similar_issues = []
             for other_issue_id, other_embed in items:
                 if issue_id == other_issue_id:
@@ -169,7 +172,7 @@ class IssueManager:
                 repo.get_issue(int(id_["id"])).title,
                 repo.get_issue(int(id_["id"])).html_url,
             )
-            for id_ in similar_issue_ids
+            for id_ in tqdm(similar_issue_ids)
         ]
         utilities.print_table(data, headers=["Title", "URL"], show_index=True)
 
@@ -271,7 +274,8 @@ class IssueManager:
         :return: list of tuples with issue number and it's embeddings
         """
         return [
-            (str(issue.number), self._generate_embeddings(issue)) for issue in issues
+            (str(issue.number), self._generate_embeddings(issue))
+            for issue in tqdm(issues)
         ]
 
     def _generate_embeddings(self, issue):

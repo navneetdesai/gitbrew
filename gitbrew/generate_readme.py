@@ -7,6 +7,7 @@ import os
 from gitpy import GitPy
 from llms.openai import OpenAI
 from PyInquirer import prompt
+from tqdm import tqdm
 
 from gitbrew import utilities
 from gitbrew.constants import FILE_TYPES
@@ -68,7 +69,7 @@ class ReadmeGenerator:
         """
         return [
             f"File: {file}. \n Summary: {self._summarize_file(file)}"
-            for file in files
+            for file in tqdm(files)
             if self._to_summarize(file)
         ]
 

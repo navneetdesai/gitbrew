@@ -43,12 +43,12 @@ class CommandHandler:
         answer = self.ask_llm(line)
         self.logger.debug(f"LLM: {answer}")
         commands = self.extract_commands(answer) or self._get_clarification(
-            answer, GenerateCommandPrompt.prompt.format(user_intention=line)
+            answer, GenerateCommandPrompt.template.format(user_intention=line)
         )
         self._execute_commands(commands)
 
     def ask_llm(self, line):
-        _prompt = GenerateCommandPrompt.prompt.format(user_intention=line)
+        _prompt = GenerateCommandPrompt.template.format(user_intention=line)
         _prompt = [{"role": "user", "content": _prompt}]
         self.logger.debug(f"Prompt: {_prompt}")
         return self.openai_client.ask_llm(_prompt)

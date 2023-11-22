@@ -54,11 +54,16 @@ class OpenAI:
         :param prompt:
         :return:
         """
-        response = openai.ChatCompletion.create(
-            model=self.chat_model,
-            messages=prompt,
-            temperature=self.temperature,
-        )
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.chat_model,
+                messages=prompt,
+                temperature=self.temperature,
+            )
+        except openai.error.OpenAIError as e:
+            print("Error: ", e)
+            return
+
         return response.choices[0]["message"]["content"].strip()
 
     def create_embedding(self, text):
