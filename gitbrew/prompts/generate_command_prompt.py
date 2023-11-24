@@ -6,6 +6,7 @@ class GenerateCommandPrompt:
     
     If you are unsure of the user's intention, ask for clarification. If a git command needs information like branch name, URL, commit message or anything else, ask the user for it as a clarification.
     The clarification should be surrounded by <CLARIFY> and </CLARIFY>.
+    Provide instructions in your answer as comments if necessary.
     For example, do not return `git rebase <branch_name>`. Instead ask for the branch name and then return `git rebase feature1`.
     
     // Example
@@ -56,6 +57,7 @@ class GenerateCommandPrompt:
     git add file1.txt
     <SEP>
     git add file2.txt
+    <SEP>
     <END>
     
     

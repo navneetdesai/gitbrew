@@ -59,8 +59,8 @@ class Shell(cmd.Cmd):
 
     def __init__(self):
         super().__init__()
-        self.setup()
         self.logger = setup_logger(save_logs=True, print_logs=True)
+        self.setup()
         self.command_handler = CommandHandler(self.logger)  # git command handler
         self.pull_request_reviewer = PullRequestReviewer(
             self.logger
@@ -133,10 +133,13 @@ class Shell(cmd.Cmd):
         Setup or read configuration
         :return:
         """
-        if os.path.exists(self.ENV_FILE):
+        cwd = os.getcwd()
+        path = os.path.join(cwd, self.ENV_FILE)
+        if os.path.isfile(path):
             self.logger.info(
-                f"{self.ENV_FILE} file exists. Skipping configuration setup..."
+                f"{self.ENV_FILE} file exists in {path}. Skipping configuration setup..."
             )
+            return
         # setup configuration
         config = {}
         self.logger.info("Setting up config...")
