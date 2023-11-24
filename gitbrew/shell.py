@@ -59,7 +59,7 @@ class Shell(cmd.Cmd):
 
     def __init__(self):
         super().__init__()
-        self.logger = setup_logger(save_logs=True, print_logs=True)
+        self.logger = setup_logger(save_logs=True, print_logs=False)
         self.setup()
         self.command_handler = CommandHandler(self.logger)  # git command handler
         self.pull_request_reviewer = PullRequestReviewer(

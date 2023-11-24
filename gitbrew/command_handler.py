@@ -23,8 +23,7 @@ class CommandHandler:
     def __init__(self, logger, model="gpt-3.5-turbo", temperature=0.2, debug=False):
         load_dotenv()
         openai_api_key = os.getenv("OPENAI_API_KEY")
-        self.console = Console()
-        self.DEBUG = debug
+        self.console = Console(color_system="auto")
         self.openai_client = OpenAI(
             openai_api_key, chat_model=model, temperature=temperature
         )
@@ -102,13 +101,14 @@ class CommandHandler:
                 try:
                     self.logger.info(f"Executing: {command}")
                     print(f"Executing: {command}")
-                    # result = subprocess.check_output(
-                    #     command_list,
-                    #     cwd=".",
-                    #     universal_newlines=True,
-                    #     stderr=subprocess.STDOUT,
-                    # )
-                    # self.logger.debug(f"Result: {result}")
+                    result = subprocess.check_output(
+                        command_list,
+                        cwd=".",
+                        universal_newlines=True,
+                        stderr=subprocess.STDOUT,
+                    )
+                    self.logger.debug(f"Result: {result}")
+                    self.console.print(result)
                 except subprocess.CalledProcessError as e:
                     self.logger.error(
                         f"Command '{e.cmd}' failed with return code {e.returncode}"
