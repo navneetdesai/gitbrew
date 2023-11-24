@@ -79,7 +79,7 @@ class IssueManager:
         :return: None
         """
         self.git_helper.repo_name = (
-            self._get_repo_url()
+            utilities.get_repo_url()
         )  # will be valid or throw an error
         self.git_helper.set_repo()
         self.logger.info(f"Using repo: {self.git_helper.repo_name}")
@@ -229,34 +229,6 @@ class IssueManager:
         issue_text = self.issue_template.format(title=title, body=body)
         issue_text = simple_preprocess(remove_stopwords(issue_text), deacc=True)
         return self.openai_agent.create_embedding(issue_text)["data"][0]["embedding"]
-
-    @staticmethod
-    def _get_repo_url():
-        """
-        Get the repo url from the user or remote
-
-        If user chooses remote, run git command using subprocess
-        and returns a valid repo url as username/repo_name
-        Otherwise prompts the user for the repo url
-        :return: username/repo_name
-        """
-        questions = Questions.REPO_URL_QUESTIONS
-        if prompt(questions)["repo_choice"] == "Remote":
-            command = ["git", "remote", "get-url", "origin"]
-            try:
-                return (
-                    subprocess.check_output(command, cwd=".", universal_newlines=True)
-                    .strip()
-                    .split(":")[1]
-                    .split(".")[0]
-                )
-            except subprocess.CalledProcessError as e:
-                print(f"Error: {e}")
-                sys.exit(1)
-        else:
-            questions = Questions.ASK_FOR_REPO_URL
-            url = prompt(questions)["repo_url"]
-            return utilities.extract_repo(url)
 
     @staticmethod
     def _get_issue_description():

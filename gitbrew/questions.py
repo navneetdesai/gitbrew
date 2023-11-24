@@ -109,3 +109,11 @@ class Questions:
             "message": "What would you like to save the file as? ",
         }
     ]
+
+    GET_CLARIFICATION = [
+        {
+            "type": "input",
+            "name": "clarification",
+            "message": None,
+        }
+    ]

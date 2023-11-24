@@ -35,11 +35,29 @@ class GenerateCommandPrompt:
     </CLARIFY>    
     
     // Example
+    
     Input: Clone a repository
     Output:
     <CLARIFY>
     Provide the remote repository URL.
     </CLARIFY>
+    
+    // Example
+    Input: Add two files to index
+    
+    Output:
+    <CLARIFY>
+    Which files do you want to add to the index?
+    </CLARIFY>
+    
+    Input: file1.txt file2.txt
+    Output:
+    <START>
+    git add file1.txt
+    <SEP>
+    git add file2.txt
+    <END>
+    
     
     
     This is the user intention in English: {user_intention}

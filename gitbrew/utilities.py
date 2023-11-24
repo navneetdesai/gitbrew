@@ -1,11 +1,15 @@
 import logging
 import re
+import subprocess
+import sys
 from datetime import datetime
 
+from PyInquirer import prompt
 from rich.logging import RichHandler
 from tabulate import tabulate
 
 from gitbrew.exceptions import InvalidRepositoryException
+from gitbrew.questions import Questions
 
 
 def print_table(data, headers, print_format="fancy_grid", show_index=False):
@@ -41,6 +45,34 @@ def print_dictionary(data_dict, headers, print_format="fancy_grid"):
         print_table(v, headers, print_format)
 
 
+def get_repo_url():
+    """
+    Get the repo url from the user or remote
+
+    If user chooses remote, run git command using subprocess
+    and returns a valid repo url as username/repo_name
+    Otherwise prompts the user for the repo url
+    :return: username/repo_name
+    """
+    questions = Questions.REPO_URL_QUESTIONS
+    if prompt(questions)["repo_choice"] == "Remote":
+        command = ["git", "remote", "get-url", "origin"]
+        try:
+            return (
+                subprocess.check_output(command, cwd=".", universal_newlines=True)
+                .strip()
+                .split(":")[1]
+                .split(".")[0]
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+    else:
+        questions = Questions.ASK_FOR_REPO_URL
+        url = prompt(questions)["repo_url"]
+        return extract_repo(url)
+
+
 def extract_repo(url):
     """
     Extracts the repository string (typically acc/repo)
@@ -65,7 +97,7 @@ def setup_logger(save_logs=False, print_logs=False):
     :return: Logger
     """
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     if print_logs:
         rich_handler = RichHandler(show_time=True, show_path=True, markup=True)

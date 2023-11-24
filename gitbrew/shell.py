@@ -48,7 +48,7 @@ class Shell(cmd.Cmd):
 
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
-    MESSAGE = "Welcome to gitbrew!\nEnter `help` for documentation. \nEnter `quit` or `exit` to exit the application.\n"
+    MESSAGE = "Welcome to gitbrew!\nEnter `help` for documentation. \nEnter `quit` or `exit` to exit the application.`cancel` to exit command line.\n"
 
     def __init__(self):
         super().__init__()
@@ -86,6 +86,15 @@ class Shell(cmd.Cmd):
         """
         self.logger.info("Exiting...")
         sys.exit(0)
+
+    def do_cancel(self, arg=None):
+        """
+        Handler for "cancel" keyword
+        :param arg: Optional args
+        :return: True
+        """
+        self.logger.info("Exiting command line")
+        self.preloop()
 
     def cmdloop(self, intro=None):
         """
@@ -162,6 +171,7 @@ class Shell(cmd.Cmd):
         """
         if not line:  # called by preloop
             return
+        line = line.strip()
         if line in self.exit_keywords:  # exit
             self.logger.info("Exiting from git command handler...")
             self.do_exit()
