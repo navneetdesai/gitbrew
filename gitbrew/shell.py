@@ -1,4 +1,5 @@
 import cmd
+import os.path
 import sys
 
 from PyInquirer import prompt
@@ -49,9 +50,16 @@ class Shell(cmd.Cmd):
     prompt = "gitbrew> "
     exit_keywords = ["exit", "quit"]
     MESSAGE = "Welcome to gitbrew!\nEnter `help` for documentation. \nEnter `quit` or `exit` to exit the application.`cancel` to exit command line.\n"
+    ENV_FILE = ".env"
+    CONFIG_KEYS = {
+        "OPENAI_API_KEY": "Enter your OpenAI API key: ",
+        "GITHUB_TOKEN": "Enter your GitHub API key: ",
+        "PINECONE_API_KEY": "Enter your Pinecone API key: ",
+    }
 
     def __init__(self):
         super().__init__()
+        self.setup()
         self.logger = setup_logger(save_logs=True, print_logs=True)
         self.command_handler = CommandHandler(self.logger)  # git command handler
         self.pull_request_reviewer = PullRequestReviewer(
@@ -119,6 +127,34 @@ class Shell(cmd.Cmd):
         if not arg:
             self.console.print(self.__doc__)
         self.cmdloop(intro=self.MESSAGE)
+
+    def setup(self):
+        """
+        Setup or read configuration
+        :return:
+        """
+        if os.path.exists(self.ENV_FILE):
+            self.logger.info(
+                f"{self.ENV_FILE} file exists. Skipping configuration setup..."
+            )
+        # setup configuration
+        config = {}
+        self.logger.info("Setting up config...")
+        print("Welcome to gitbrew!\n. Let's setup your API keys.\n")
+        for key, prompt_message in self.CONFIG_KEYS.items():
+            config[key] = input(prompt_message)
+        self._write_config(config)
+        self.logger.info("Configuration setup complete!")
+
+    def _write_config(self, config):
+        """
+        Write configuration to .env file
+        :param config: Configuration dictionary
+        :return: None
+        """
+        with open(self.ENV_FILE, "w") as file:
+            for key, value in config.items():
+                file.write(f"{key}={value}\n")
 
     def default(self, line: str) -> None:
         """
