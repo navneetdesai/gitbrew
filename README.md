@@ -6,10 +6,9 @@ Welcome to Gitbrew, the innovative tool that harnesses the power of language mod
 - [Introduction](#introduction)
 - [Features](#features)
 - [Technologies](#technologies)
-- [Installation](#installation)
+- [Installation](#Installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
-- [License](#license)
 
 ## Introduction👋
 Gitbrew is a command-line application that simplifies your GitHub workflow. It uses advanced language models to interpret natural language commands, generate git commands, handle GitHub issues, and create comprehensive READMEs for your projects. Gitbrew is your go-to utility for a more efficient and intelligent way to interact with GitHub.
@@ -21,7 +20,7 @@ Gitbrew is a command-line application that simplifies your GitHub workflow. It u
 - **Readme Generation**: Generate visually appealing READMEs with structured content and visual elements.
 - **Interactive Shell Interface**: Use Gitbrew's interactive CLI to perform a variety of GitHub-related tasks.
 
-## Technologies
+## Technologies🔧
 Gitbrew is built with a variety of technologies and integrates with several APIs to provide its functionalities:
 - **Python 3.9**: The primary programming language used for development.
 - **OpenAI API**: For interacting with language models to generate text and commands.
@@ -31,7 +30,7 @@ Gitbrew is built with a variety of technologies and integrates with several APIs
 - **PyInquirer**: To create interactive command-line prompts.
 - **Rich**: To enhance console output with rich text and formatting.
 
-## Installation🛠️📦 
+## Installation🛠️
 ```bash
 pip install gitbrew
 ```
@@ -45,7 +44,7 @@ pip install gitbrew
 2. Provide the API keys for GitHub, openai, pinecone etc
 3. Start using Gitbrew!
 
-## Contributing 🤝🌐
+## Contributing🤝🌐
 Contributions and feature requests are welcome! 
 
 ### Issues and Feature Requests
