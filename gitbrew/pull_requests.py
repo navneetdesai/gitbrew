@@ -9,11 +9,11 @@ import re
 from PyInquirer import prompt
 from tqdm import tqdm
 
-from gitbrew.gitpy import GitPy
-from gitbrew.llms import OpenAI
-from gitbrew.prompts.pull_request_review_prompt import PullRequestReviewPrompt
-from gitbrew.questions import Questions
-from gitbrew.utilities import print_table
+from .gitpy import GitPy
+from .llms import OpenAI
+from .prompts.pull_request_review_prompt import PullRequestReviewPrompt
+from .questions import Questions
+from .utilities import print_table
 
 
 class PullRequestReviewer:

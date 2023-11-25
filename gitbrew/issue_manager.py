@@ -2,8 +2,6 @@
 Handler for issues
 """
 import os
-import subprocess
-import sys
 
 import github.PaginatedList
 import pinecone
@@ -13,10 +11,10 @@ from PyInquirer import prompt
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 
-from gitbrew import utilities
-from gitbrew.gitpy import GitPy
-from gitbrew.llms import OpenAI
-from gitbrew.questions import Questions
+from . import utilities
+from .gitpy import GitPy
+from .llms import OpenAI
+from .questions import Questions
 
 
 class IssueManager:

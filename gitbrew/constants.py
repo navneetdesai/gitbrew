@@ -1,9 +1,3 @@
-"""
-Constants for gitbrew
-https://git-scm.com/docs/git
-"""
-
-
 class SafeCommands:
     """
     List of git commands that dont make changes

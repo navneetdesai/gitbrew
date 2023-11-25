@@ -8,8 +8,8 @@ from PyInquirer import prompt
 from rich.logging import RichHandler
 from tabulate import tabulate
 
-from gitbrew.exceptions import InvalidRepositoryException
-from gitbrew.questions import Questions
+from .exceptions import InvalidRepositoryException
+from .questions import Questions
 
 
 def print_table(data, headers, print_format="fancy_grid", show_index=False):

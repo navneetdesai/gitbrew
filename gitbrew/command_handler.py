@@ -6,16 +6,15 @@ import re
 import subprocess
 
 from dotenv import load_dotenv
-from llms.openai import OpenAI
 from PyInquirer import prompt
 from rich.console import Console
 
-from gitbrew.prompts.clarification_prompt import ClarificationPrompt
-from gitbrew.prompts.generate_command_prompt import GenerateCommandPrompt
-
 from .constants import SafeCommands
 from .exceptions import InvalidAnswerFormatException
+from .llms.openai import OpenAI
+from .prompts.clarification_prompt import ClarificationPrompt
 from .prompts.explain_command_prompt import ExplainCommandPrompt
+from .prompts.generate_command_prompt import GenerateCommandPrompt
 from .questions import Questions
 
 

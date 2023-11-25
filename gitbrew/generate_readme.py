@@ -4,16 +4,16 @@ Generates readme from a github repository
 import base64
 import os
 
-from gitpy import GitPy
-from llms.openai import OpenAI
 from PyInquirer import prompt
 from tqdm import tqdm
 
-from gitbrew import utilities
-from gitbrew.constants import FILE_TYPES
-from gitbrew.prompts.generate_readme_prompt import GenerateReadmePrompt
-from gitbrew.prompts.summarize_file_prompt import SummarizeFilePrompt
-from gitbrew.questions import Questions
+from . import utilities
+from .constants import FILE_TYPES
+from .gitpy import GitPy
+from .llms.openai import OpenAI
+from .prompts.generate_readme_prompt import GenerateReadmePrompt
+from .prompts.summarize_file_prompt import SummarizeFilePrompt
+from .questions import Questions
 
 
 class ReadmeGenerator:

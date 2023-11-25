@@ -3,14 +3,14 @@ import os.path
 import sys
 
 from PyInquirer import prompt
-from questions import Questions
 from rich.console import Console
 
-from gitbrew.command_handler import CommandHandler
-from gitbrew.generate_readme import ReadmeGenerator
-from gitbrew.issue_manager import IssueManager
-from gitbrew.pull_requests import PullRequestReviewer
-from gitbrew.utilities import setup_logger
+from .command_handler import CommandHandler
+from .generate_readme import ReadmeGenerator
+from .issue_manager import IssueManager
+from .pull_requests import PullRequestReviewer
+from .questions import Questions
+from .utilities import setup_logger
 
 
 class Shell(cmd.Cmd):

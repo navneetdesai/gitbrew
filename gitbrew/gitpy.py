@@ -4,8 +4,8 @@ Wrappers for the GitHub API
 
 from github import Github
 
-from gitbrew import utilities
-from gitbrew.constants import IgnoredFiles
+from . import utilities
+from .constants import IgnoredFiles
 
 
 class GitPy:

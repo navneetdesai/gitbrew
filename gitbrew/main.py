@@ -1,7 +1,6 @@
-import time
+__package__ = "gitbrew"
 
-from shell import Shell
-from tqdm import tqdm
+from .shell import Shell
 
 
 def main():
