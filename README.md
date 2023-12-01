@@ -30,23 +30,24 @@ Gitbrew is a command-line application that simplifies your GitHub workflow. It u
 100%|██████████████████████████████████████████████████████████████| 2/2 [00:47<00:00, 23.85s/it]
 ? What would you like to save the file as?   Readme.md
 ```
-![Readme.md](./examples/images/readme_example.png)
+![Readme.md](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/readme_example.png)
 ***
 ### Pull Request Review
 ```terminal
 ? What would you like to do?  Review a pull request
 Enter the pull request URL: https://github.com/<username>/<repositoryname>/pull/<number>
 ```
-![Pull Request Review](./examples/images/review1.png)
-![Pull Request Review](./examples/images/review2.png)
-![Pull Request Review](./examples/images/review3.png)
+![Pull Request Review](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/review1.png)
+![Pull Request Review](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/review2.png)
+![Pull Request Review](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/review3.png)
+
 ***
 ### Natural language interface for git
-![gitbrew](./examples/images/gitbrew1.png)
+![gitbrew](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/gitbrew1.png)
 ***
-![gitbrew](./examples/images/gitbrew2.png)
+![gitbrew](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/gitbrew2.png)
 ***
-![gitbrew](./examples/images/gitbrew3.png)
+![gitbrew](https://github.com/navneetdesai/gitbrew/raw/main/examples/images/gitbrew3.png)
 ***
 
 
