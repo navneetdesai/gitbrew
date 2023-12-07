@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gitbrew"
-version = "0.2.4"
+version = "0.2.5"
 description = "LLM-powered github utility"
 authors = ["Navneet Desai <navneetdesai44@gmail.com>"]
 license = "MIT"

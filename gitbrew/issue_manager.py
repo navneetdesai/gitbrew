@@ -196,9 +196,8 @@ class IssueManager:
         :param issues:
         :return:
         """
-        db_last_opened_issue_number = self.query_db(
-            [last_opened_issue_number] * 1536, 1, True
-        )[0]["values"][0]
+        values = self.query_db([last_opened_issue_number] * 1536, 1, True)
+        db_last_opened_issue_number = values[0]["values"][0] if values else None
         self.logger.info(
             f"Last opened issue number in the repo: {last_opened_issue_number}"
         )

@@ -107,7 +107,8 @@ class CommandHandler:
                         stderr=subprocess.STDOUT,
                     )
                     self.logger.debug(f"Result: {result}")
-                    self.console.print(result)
+                    # self.console.print(result)
+                    print(result)
                 except subprocess.CalledProcessError as e:
                     self.logger.error(
                         f"Command '{e.cmd}' failed with return code {e.returncode}"
