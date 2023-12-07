@@ -181,7 +181,8 @@ class CommandHandler:
         """
 
         content = ExplainCommandPrompt.template.format(command=command)
-        print(f"Explanation: {self.openai_client.create_message(user_prompt=content)}")
+        message = self.openai_client.create_message(user_prompt=content)
+        print(f"Explanation: {self.openai_client.ask_llm(message)}")
 
     def _get_clarification(self, answer, line):
         """
